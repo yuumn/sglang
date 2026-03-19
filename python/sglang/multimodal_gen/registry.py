@@ -823,7 +823,6 @@ def _register_configs():
             "FireRedTeam/FireRed-Image-Edit-1.0",
             "FireRedTeam/FireRed-Image-Edit-1.1",
         ],
-        model_detectors=[lambda hf_id: "firered-image-edit" in hf_id.lower()],
     )
 
 
