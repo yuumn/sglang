@@ -71,9 +71,12 @@ class CompressorBackend:
         if is_paged:
             metadata = self.get_paged_compress_metadata(compress_ratio)
             coff = 2 if is_overlap_compress(compress_ratio) else 1
-            last_dim = 2 * head_dim * coff
-            assert kv_score_buffer.shape[-1] == last_dim
-            kv_score_buffer = kv_score_buffer.view(-1, compress_ratio, last_dim)
+            if compress_ratio == 128 and envs.SGLANG_OPT_USE_ONLINE_COMPRESS.get():
+                kv_score_buffer = kv_score_buffer.view(-1, 1, head_dim * 3)
+            else:
+                last_dim = 2 * head_dim * coff
+                assert kv_score_buffer.shape[-1] == last_dim
+                kv_score_buffer = kv_score_buffer.view(-1, compress_ratio, last_dim)
         else:
             plan = make_compressor_plan(compress_ratio, forward_batch)
             metadata = (forward_batch.req_pool_indices.to(torch.int32), None, plan)
@@ -223,7 +226,7 @@ def create_paged_compressor_data(
 ) -> FusedCompressMetadata:
     swa_page_size = token_to_kv_pool.swa_page_size
     ring_size = token_to_kv_pool.get_ring_size(compress_ratio=compress_ratio)
-    assert ring_size % compress_ratio == 0
+    # assert ring_size % compress_ratio == 0
 
     def clip_down(positions: torch.Tensor) -> torch.Tensor:
         return positions // compress_ratio * compress_ratio

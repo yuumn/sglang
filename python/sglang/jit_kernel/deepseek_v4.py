@@ -35,6 +35,35 @@ def _jit_common_module() -> Module:
 
 
 @cache_once
+def _jit_compress_128_online_plan_module() -> Module:
+    """Host-side plan generator for online compress 128 (no template args)."""
+    return load_jit(
+        make_name("compress_128_online_plan"),
+        cuda_files=["deepseek_v4/c128_online.cuh"],
+        cuda_wrappers=[
+            ("plan_compress_online_prefill", "plan_compress_online_prefill"),
+        ],
+    )
+
+
+@cache_once
+def _jit_compress_128_online_module(head_dim: int) -> Module:
+    """Online compress 128 kernel: ring_size=1, per-index (max, sum, kv) state."""
+    args = make_cpp_args(head_dim, is_arch_support_pdl())
+    kernel_class = f"FlashCompress128OnlineKernel<{args}>"
+    return load_jit(
+        make_name("compress_128_online"),
+        *args,
+        cuda_files=["deepseek_v4/c128_online.cuh"],
+        cuda_wrappers=[
+            ("decode", f"{kernel_class}::run_decode"),
+            ("prefill", f"{kernel_class}::run_prefill"),
+        ],
+        extra_cuda_cflags=["-use_fast_math"],
+    )
+
+
+@cache_once
 def _jit_topk_module() -> Module:
     args = make_cpp_args(is_arch_support_pdl())
     return load_jit(
@@ -423,6 +452,19 @@ class CompressorPrefillPlan(NamedTuple):
         device: torch.device,
         use_cuda_graph: bool = False,
     ) -> CompressorPrefillPlan:
+        from sglang.srt.environ import envs
+
+        # Online c128 keeps the same NamedTuple shape (compress_plan, write_plan)
+        # so call sites that splat `*plan[1:]` continue to work, but the C++
+        # plan struct semantics differ (last-token coords + window_len).
+        if compress_ratio == 128 and envs.SGLANG_OPT_USE_ONLINE_COMPRESS.get():
+            return CompressorPrefillPlan._generate_online(
+                num_q_tokens=num_q_tokens,
+                seq_lens=seq_lens,
+                extend_lens=extend_lens,
+                device=device,
+                use_cuda_graph=use_cuda_graph,
+            )
         assert seq_lens.device == extend_lens.device
         seq_lens = seq_lens.to(torch.int64)
         extend_lens = extend_lens.to(torch.int64)
@@ -449,6 +491,42 @@ class CompressorPrefillPlan(NamedTuple):
             plan_tensor[1, : plan_lens[1]].to(device, non_blocking=True),
         )
 
+    @staticmethod
+    def _generate_online(
+        num_q_tokens: int,
+        seq_lens: torch.Tensor,
+        extend_lens: torch.Tensor,
+        device: torch.device,
+        use_cuda_graph: bool,
+    ) -> CompressorPrefillPlan:
+        # Online plan host-side path: only CPU/cuda-host implemented today.
+        # Move inputs to CPU pinned memory then bounce the result to device.
+        seq_lens_cpu = seq_lens.detach().to(torch.int64).cpu()
+        extend_lens_cpu = extend_lens.detach().to(torch.int64).cpu()
+        plan_tensor = torch.empty(
+            (2, num_q_tokens, 16),
+            dtype=torch.uint8,
+            device="cpu",
+            pin_memory=True,
+        )
+        module = _jit_compress_128_online_plan_module()
+        plan_lens = module.plan_compress_online_prefill(
+            extend_lens_cpu,
+            seq_lens_cpu,
+            plan_tensor[0],
+            plan_tensor[1],
+            use_cuda_graph,
+        )
+        return CompressorPrefillPlan(
+            128,
+            plan_tensor[0, : plan_lens[0]].to(device, non_blocking=True),
+            plan_tensor[1, : plan_lens[1]].to(device, non_blocking=True),
+        )
+
+    @property
+    def is_decode(self) -> bool:
+        return False
+
 
 class CompressorDecodePlan(NamedTuple):
     compress_ratio: int
@@ -457,6 +535,10 @@ class CompressorDecodePlan(NamedTuple):
     def copy_(self, other: CompressorDecodePlan) -> None:
         assert self.compress_ratio == other.compress_ratio
         self.seq_lens.copy_(other.seq_lens)
+
+    @property
+    def is_decode(self) -> bool:
+        return True
 
 
 def compress_plan(
@@ -508,13 +590,19 @@ def compress_forward(
             kv_score_input.device,
         )
     assert plan.compress_ratio == compress_ratio, "Mismatched compress ratio in plan!"
+    # Online c128: separate JIT module, fp32 state, no compile-time dtypes.
+    if compress_ratio == 128 and envs.SGLANG_OPT_USE_ONLINE_COMPRESS.get():
+        online_module = _jit_compress_128_online_module(head_dim=head_dim)
+        F = online_module.decode if plan.is_decode else online_module.prefill
+        F(kv_score_buffer, kv_score_input, out, ape, indices, *plan[1:], extra_data)
+        return out
     module = _jit_compress_module(
         head_dim,
         kv_score_input.dtype,
         out.dtype,
         compress_ratio,
     )
-    if isinstance(plan, CompressorDecodePlan):
+    if plan.is_decode:
         F = module.decode
     elif compress_ratio == 128 and _should_use_c128_prefill_defensive():
         F = _jit_compress_module_v2_defensive(
@@ -548,7 +636,7 @@ def compress_fused_norm_rope_inplace(
         weight,
         plan[1],
         freq_cis,
-        1 if isinstance(plan, CompressorDecodePlan) else 0,
+        int(plan.is_decode),
         eps,
         plan.compress_ratio,
     )
@@ -713,8 +801,8 @@ def create_paged_compress_data_kernel(
         pos = tl.maximum(pos, 0)
         loc = tl.load(
             req_to_token_ptr
-            + rid * stride_req_to_token_0
-            + pos * stride_req_to_token_1,
+            + rid.to(tl.int64) * stride_req_to_token_0
+            + pos.to(tl.int64) * stride_req_to_token_1,
             mask=mask,
             other=0,
         ).to(tl.int32)
