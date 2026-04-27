@@ -15,6 +15,7 @@ from sglang.jit_kernel.utils import (
 from sglang.srt.debug_utils.deepseek_v4_debug_utils import (
     deepseek_v4_moe_code_path_checker,
 )
+from sglang.srt.environ import envs
 
 if TYPE_CHECKING:
     from tvm_ffi.module import Module
@@ -104,6 +105,25 @@ def _jit_compress_module(
         cuda_files=[f"deepseek_v4/c{ratio}.cuh"],
         cuda_wrappers=[
             ("decode", f"{kernel_class}::run_decode"),
+            ("prefill", f"{kernel_class}::run_prefill"),
+        ],
+        extra_cuda_cflags=["-use_fast_math"],
+    )
+
+
+@cache_once
+def _jit_compress_module_v2_defensive(
+    head_dim: int,
+    dtype_in: torch.dtype,
+    dtype_out: torch.dtype,
+) -> Module:
+    args = make_cpp_args(head_dim, dtype_in, dtype_out, is_arch_support_pdl())
+    kernel_class = f"FlashCompress128Kernel<{args}>"
+    return load_jit(
+        make_name("compress_128_v2_defensive"),
+        *args,
+        cuda_files=["deepseek_v4/c128_v2.cuh"],
+        cuda_wrappers=[
             ("prefill", f"{kernel_class}::run_prefill"),
         ],
         extra_cuda_cflags=["-use_fast_math"],
@@ -494,9 +514,24 @@ def compress_forward(
         out.dtype,
         compress_ratio,
     )
-    F = module.decode if isinstance(plan, CompressorDecodePlan) else module.prefill
+    if isinstance(plan, CompressorDecodePlan):
+        F = module.decode
+    elif compress_ratio == 128 and _should_use_c128_prefill_defensive():
+        F = _jit_compress_module_v2_defensive(
+            head_dim,
+            kv_score_input.dtype,
+            out.dtype,
+        ).prefill
+    else:
+        F = module.prefill
     F(kv_score_buffer, kv_score_input, out, ape, indices, *plan[1:], extra_data)
     return out
+
+
+def _should_use_c128_prefill_defensive() -> bool:
+    from sglang.srt.environ import envs
+
+    return envs.SGLANG_HANDLE_C128_PREFILL_KERNEL.get()
 
 
 def compress_fused_norm_rope_inplace(
@@ -711,6 +746,61 @@ def create_paged_compress_data_kernel(
         tl.store(base + 0 * stride_out_1_1, v0, mask=mask)
 
 
+_mmap_dumper = None
+
+
+def _get_mmap_dumper():
+    global _mmap_dumper
+    if _mmap_dumper is None:
+        from sglang.srt.debug_utils.mmap_dumper import MmapDumper
+        from sglang.srt.environ import envs
+
+        dump_dir = envs.SGLANG_HACK_DEBUG_DUMP_CREATE_PAGED_COMPRESS_DATA.get()
+        _mmap_dumper = MmapDumper(dump_dir or None)
+    return _mmap_dumper
+
+
+def _maybe_dump_create_paged_compress_data_inputs(
+    *,
+    compress_ratio: int,
+    is_overlap: bool,
+    swa_page_size: int,
+    ring_size: int,
+    req_pool_indices: torch.Tensor,
+    seq_lens: torch.Tensor,
+    extend_seq_lens: torch.Tensor,
+    req_to_token: torch.Tensor,
+    full_to_swa_index_mapping: torch.Tensor,
+    block: int,
+) -> None:
+    d = _get_mmap_dumper()
+    if not d.is_active():
+        return
+
+    # Avoid full-tensor cpu copy of req_to_token (multi-GB).
+    # Hardcoded col cutoff = 10000 (seq_lens always <= 10000 for current bench).
+    cols = min(10000, req_to_token.shape[1])
+    req_to_token_partial = req_to_token[:, :cols].contiguous()
+
+    d.dump(
+        {
+            "compress_ratio": compress_ratio,
+            "is_overlap": is_overlap,
+            "swa_page_size": swa_page_size,
+            "ring_size": ring_size,
+            "block": block,
+            "req_to_token_full_shape_0": req_to_token.shape[0],
+            "req_to_token_full_shape_1": req_to_token.shape[1],
+            "req_to_token_dumped_cols": cols,
+            "req_pool_indices": req_pool_indices,
+            "seq_lens": seq_lens,
+            "extend_seq_lens": extend_seq_lens,
+            "req_to_token_partial": req_to_token_partial,
+            "full_to_swa_index_mapping": full_to_swa_index_mapping,
+        }
+    )
+
+
 def triton_create_paged_compress_data(
     *,
     compress_ratio: int,
@@ -724,6 +814,22 @@ def triton_create_paged_compress_data(
     full_to_swa_index_mapping: torch.Tensor,
     block: int = 128,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    _should_dump = envs.SGLANG_HACK_DEBUG_DUMP_CREATE_PAGED_COMPRESS_DATA.get() and (compress_ratio == 128)
+    if _should_dump:
+        torch.cuda.synchronize()
+        _maybe_dump_create_paged_compress_data_inputs(
+            compress_ratio=compress_ratio,
+            is_overlap=is_overlap,
+            swa_page_size=swa_page_size,
+            ring_size=ring_size,
+            req_pool_indices=req_pool_indices,
+            seq_lens=seq_lens,
+            extend_seq_lens=extend_seq_lens,
+            req_to_token=req_to_token,
+            full_to_swa_index_mapping=full_to_swa_index_mapping,
+            block=block,
+        )
+
     batch_size = req_pool_indices.shape[0]
     out_dim = 4 if is_overlap else 1
     device_args: dict = dict(device=req_pool_indices.device, dtype=torch.int32)
@@ -749,6 +855,10 @@ def triton_create_paged_compress_data(
         ring_size=ring_size,
         BLOCK=block,
     )
+
+    if _should_dump:
+        torch.cuda.synchronize()
+
     if not is_overlap:
         out_1.squeeze_(1)
     return out_0, out_1
