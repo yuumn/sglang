@@ -863,7 +863,15 @@ class DSparkDraftModel(DSparkDraftMixin, DFlashDraftModel):
 
 
 class Qwen3DSparkModel(DSparkDraftModel):
-    pass
+    def __new__(cls, config, quant_config=None, prefix: str = ""):
+        # Early Qwen3 DFlash checkpoints used the Qwen3DSparkModel architecture
+        # tag before DSpark introduced its required Markov head. Keep those
+        # markov_rank=0 checkpoints loadable through the DFlash path.
+        if int(getattr(config, "markov_rank", 0)) <= 0:
+            return DFlashDraftModel(
+                config=config, quant_config=quant_config, prefix=prefix
+            )
+        return super().__new__(cls)
 
 
 class LingDSparkModel(DSparkDraftModel):

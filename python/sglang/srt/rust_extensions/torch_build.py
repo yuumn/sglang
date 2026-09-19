@@ -74,7 +74,13 @@ def torch_build_configuration(
         cxx11_abi = bool(torch_module._C._GLIBCXX_USE_CXX11_ABI)
 
     environment = dict(os.environ if base_environment is None else base_environment)
-    environment["LIBTORCH_USE_PYTORCH"] = "1"
+    # torch-sys only tracks the value of LIBTORCH_USE_PYTORCH when deciding
+    # whether to rerun its build script.  Using a constant value here lets
+    # Cargo reuse link-search paths from an old uv build-isolation directory
+    # after that temporary directory has been removed.  Any value enables the
+    # PyTorch discovery mode, so include the resolved package path to make the
+    # Cargo fingerprint follow the active torch installation.
+    environment["LIBTORCH_USE_PYTORCH"] = os.fspath(torch_root)
     # tch 0.24 targets Torch 2.11. The compatibility header below covers the
     # API removals in the supported 2.12/2.13 builds, after this explicit gate.
     environment["LIBTORCH_BYPASS_VERSION_CHECK"] = "1"

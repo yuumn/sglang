@@ -29,7 +29,7 @@ dependencies = [
   "blobfile==3.0.0",
   "build",
   "compressed-tensors==0.18.0",
-  "cuda-python>=12,<13",
+  "cuda-python>=13.0",
   # Transitive dep of flashinfer-python, pinned because 1.6.0rc6 shipped no cp310 linux x86_64 wheel.
   "cuda-tile==1.6.0rc5",
   "datasets",
@@ -39,9 +39,9 @@ dependencies = [
   "einops",
   "fastapi",
   "flash-attn-4>=4.0.0b18",
-  "flashinfer_python[cu12]==0.6.18", # keep it aligned with jit-cache version in Dockerfile
+  "flashinfer_python[cu13]==0.6.18", # keep it aligned with jit-cache version in Dockerfile
   "gguf",
-  "humming-kernels[cu12]==0.1.12",
+  "humming-kernels[cu13]==0.1.12",
   "interegular",
   "IPython",
   "kernels>=0.14.1,<0.15",
@@ -52,7 +52,7 @@ dependencies = [
   "ninja",
   "numba==0.65.1",
   "numpy",
-  "nvidia-cutlass-dsl==4.6.2",
+  "nvidia-cutlass-dsl[cu13]==4.6.2",
   "nvidia-mathdx==25.6.0",
   "nvidia-ml-py",
   "openai==2.6.1",
@@ -74,9 +74,9 @@ dependencies = [
   "scipy",
   "sentencepiece",
   "setproctitle",
-  "sgl-deep-ep==0.1.2+cu129",
-  "sgl-deep-gemm==0.1.7+cu129",
-  "sglang-kernel==0.4.6.post1+cu129",
+  "sgl-deep-ep==0.1.2",
+  "sgl-deep-gemm==0.1.7",
+  "sglang-kernel==0.4.6.post1",
   "smg-grpc-servicer>=0.5.0",
   "soundfile==0.13.1",
   "tiktoken",
@@ -104,22 +104,6 @@ dependencies = [
 name = "pypi"
 url = "https://pypi.org/simple"
 default = true
-
-[[tool.uv.index]]
-name = "pytorch-cu129"
-url = "https://download.pytorch.org/whl/cu129"
-explicit = true
-
-[[tool.uv.index]]
-name = "nvidia"
-url = "https://pypi.nvidia.com"
-explicit = true
-
-[tool.uv.sources]
-cuda-tile = { index = "nvidia" }
-torch = { index = "pytorch-cu129" }
-torchaudio = { index = "pytorch-cu129" }
-torchvision = { index = "pytorch-cu129" }
 
 [project.optional-dependencies]
 checkpoint-engine = ["checkpoint-engine==0.1.2"]

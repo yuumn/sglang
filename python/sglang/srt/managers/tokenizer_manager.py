@@ -2793,17 +2793,22 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
         i: int,
     ) -> None:
         """Calculate speculative decoding metrics, such as acceptance rate and acceptance length metrics."""
+        spec_verify_ct = getattr(recv_obj, "spec_verify_ct", None)
+        spec_num_correct_drafts = getattr(
+            recv_obj, "spec_num_correct_drafts", None
+        )
         if (
-            hasattr(recv_obj, "spec_verify_ct")
-            and recv_obj.spec_verify_ct[i] > 0
-            and hasattr(recv_obj, "spec_num_correct_drafts")
-            and len(recv_obj.spec_num_correct_drafts) > i
+            spec_verify_ct
+            and len(spec_verify_ct) > i
+            and spec_verify_ct[i] > 0
+            and spec_num_correct_drafts
+            and len(spec_num_correct_drafts) > i
         ):
             # Total number of proposed draft tokens per request.
-            num_proposed_drafts = recv_obj.spec_verify_ct[i] * (
+            num_proposed_drafts = spec_verify_ct[i] * (
                 get_spec().speculative_num_draft_tokens - 1
             )
-            num_correct_drafts = recv_obj.spec_num_correct_drafts[i]
+            num_correct_drafts = spec_num_correct_drafts[i]
 
             # Calculate per-request acceptance rate and average acceptance length.
             if num_proposed_drafts > 0:
@@ -2811,12 +2816,12 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
                 meta_info["spec_accept_rate"] = num_correct_drafts / num_proposed_drafts
                 # accept_length: completion_tokens / verify_ct (includes bonus token).
                 meta_info["spec_accept_length"] = (
-                    recv_obj.completion_tokens[i] / recv_obj.spec_verify_ct[i]
+                    recv_obj.completion_tokens[i] / spec_verify_ct[i]
                 )
 
                 meta_info["spec_num_correct_drafts"] = num_correct_drafts
                 meta_info["spec_num_proposed_drafts"] = num_proposed_drafts
-                meta_info["spec_verify_ct"] = recv_obj.spec_verify_ct[i]
+                meta_info["spec_verify_ct"] = spec_verify_ct[i]
 
                 if (
                     getattr(recv_obj, "spec_num_cap_tokens", None) is not None
@@ -2824,7 +2829,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
                     and recv_obj.spec_num_cap_tokens[i] > 0
                 ):
                     meta_info["spec_cap_length"] = (
-                        recv_obj.spec_num_cap_tokens[i] / recv_obj.spec_verify_ct[i]
+                        recv_obj.spec_num_cap_tokens[i] / spec_verify_ct[i]
                     )
                 if (
                     _ragged_verify_cap_accept()
@@ -2834,7 +2839,7 @@ class TokenizerManager(TokenizerControlMixin, TokenizerManagerScoreMixin):
                 ):
                     meta_info["spec_block_accept_length"] = (
                         recv_obj.spec_num_block_accept_tokens[i]
-                        / recv_obj.spec_verify_ct[i]
+                        / spec_verify_ct[i]
                     )
 
                 # FIXME: backward-compat aliases, remove in next release.

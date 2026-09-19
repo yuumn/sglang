@@ -443,7 +443,9 @@ crate-type = ["cdylib"]
                 },
             )
 
-            self.assertEqual(build.environment["LIBTORCH_USE_PYTORCH"], "1")
+            self.assertEqual(
+                build.environment["LIBTORCH_USE_PYTORCH"], str(torch_root)
+            )
             self.assertEqual(build.environment["LIBTORCH_BYPASS_VERSION_CHECK"], "1")
             self.assertIn(str(compat_header), build.environment["CXXFLAGS"])
             self.assertIn(
