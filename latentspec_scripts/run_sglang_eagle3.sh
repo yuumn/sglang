@@ -15,7 +15,7 @@ python -m sglang.launch_server \
   --port 30000 \
   --tp-size 1 \
   --trust-remote-code \
-  --speculative-algorithm DFLASH \
+  --speculative-algorithm EAGLE3 \
   --speculative-draft-model-path "${DRAFT_MODEL}" \
   # --dtype bfloat16 \
   # --attention-backend triton \

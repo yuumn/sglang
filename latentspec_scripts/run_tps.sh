@@ -7,10 +7,11 @@ source ${SGLANG_DIR}/.sglangenv_07/bin/activate
 PORT=${PORT:-30000}
 TEMP=${TEMP:-1.0}
 SUFFIX=${SUFFIX:-baseline}
-MAX_TOKEN=${MAX_TOKEN:-256}
+MAX_TOKEN=${MAX_TOKEN:-512}
+TIMESTAMP=${TIMESTAMP:-$(date +%Y%m%d_%H%M%S)}
+LOWER_MODEL_NAME=${LOWER_MODEL_NAME:-qwen3-4b}
 
-TIMESTAMP=$(date +%Y%m%d_%H%M%S)
-OUTPUT_DIR=${SCRIPT_DIR}/tps_results/qwen3-4b_${SUFFIX}
+OUTPUT_DIR=${SCRIPT_DIR}/tps_results/${LOWER_MODEL_NAME}_${SUFFIX}
 mkdir -p $OUTPUT_DIR
 
 
@@ -33,7 +34,6 @@ python test_tps.py \
     --top-k -1 \
     --min-p 0.0 \
     --sampling-seed 980406 \
-    --ignore-eos \
     --output-dir $OUTPUT_DIR \
     --output-filename ${TIMESTAMP}_temp-${TEMP}_max-${MAX_TOKEN}.jsonl \
     2>&1 | tee -a $OUTPUT_DIR/${TIMESTAMP}_temp-${TEMP}_max-${MAX_TOKEN}_print.log
