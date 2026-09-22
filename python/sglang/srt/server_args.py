@@ -2113,6 +2113,11 @@ class ServerArgs:
         "DFLASH only. Block size (verify window length). Alias of --speculative-num-draft-tokens for DFLASH.",
         NS("spec"),
     ] = None
+    speculative_dflash_prediction_hidden_start: A[
+        Optional[int],
+        "DFLASH only. First draft hidden row projected to a token proposal. Use 0 for checkpoints that train the anchor row as the first next-token prediction; legacy checkpoints default to 1.",
+        NS("spec"),
+    ] = None
     speculative_dspark_block_size: A[
         Optional[int],
         "DSPARK only. Draft block size gamma (number of proposed draft tokens). The verify window is gamma + 1, so this sets --speculative-num-draft-tokens = gamma + 1. Omit to auto-infer gamma from the draft checkpoint block_size.",

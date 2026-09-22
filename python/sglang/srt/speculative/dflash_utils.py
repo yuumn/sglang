@@ -529,6 +529,7 @@ class DFlashDraftConfig:
     num_hidden_layers: Optional[int]
     num_target_layers: Optional[int]
     block_size: Optional[int]
+    prediction_hidden_start: int
     conv_kernel_size: int
     conv_group_size: int
     selector_rank: int
@@ -549,6 +550,47 @@ class DFlashDraftConfig:
 
     def resolve_block_size(self, *, default: Optional[int] = None) -> Optional[int]:
         return self.block_size if self.block_size is not None else default
+
+    def resolve_num_predictions(
+        self,
+        *,
+        block_size: Optional[int] = None,
+        prediction_hidden_start: Optional[int] = None,
+    ) -> Optional[int]:
+        """Resolve how many draft hidden rows are projected to token proposals.
+
+        Legacy DFlash checkpoints skip hidden row 0 because it contains the seeded
+        anchor token.  DeepSpec-style checkpoints supervise that row as the first
+        next-token prediction, so they set ``prediction_hidden_start=0``.
+        """
+        resolved_block_size = self.block_size if block_size is None else block_size
+        if resolved_block_size is None:
+            return None
+        start = (
+            self.prediction_hidden_start
+            if prediction_hidden_start is None
+            else int(prediction_hidden_start)
+        )
+        num_predictions = int(resolved_block_size) - start
+        if num_predictions < 0:
+            raise ValueError(
+                "DFLASH prediction_hidden_start exceeds the available hidden "
+                f"row, got block_size={resolved_block_size}, "
+                f"prediction_hidden_start={start}."
+            )
+        return num_predictions
+
+    def resolve_verify_num_draft_tokens(
+        self,
+        *,
+        block_size: Optional[int] = None,
+        prediction_hidden_start: Optional[int] = None,
+    ) -> Optional[int]:
+        num_predictions = self.resolve_num_predictions(
+            block_size=block_size,
+            prediction_hidden_start=prediction_hidden_start,
+        )
+        return None if num_predictions is None else num_predictions + 1
 
     def resolve_target_layer_ids(
         self,
@@ -612,6 +654,27 @@ def parse_dflash_draft_config(*, draft_hf_config: Any) -> DFlashDraftConfig:
         field_name="DFLASH block_size",
         min_value=1,
     )
+    prediction_hidden_start = _parse_optional_int(
+        dflash_cfg.get(
+            "prediction_hidden_start",
+            _cfg_get(draft_hf_config, "prediction_hidden_start", 1),
+        ),
+        field_name="DFLASH prediction_hidden_start",
+        min_value=0,
+    )
+    if prediction_hidden_start is None:
+        prediction_hidden_start = 1
+    if prediction_hidden_start not in (0, 1):
+        raise ValueError(
+            "DFLASH prediction_hidden_start must be 0 (sample the anchor row) "
+            f"or 1 (skip it), got {prediction_hidden_start}."
+        )
+    if block_size is not None and prediction_hidden_start > block_size:
+        raise ValueError(
+            "DFLASH prediction_hidden_start must not exceed block_size, "
+            f"got prediction_hidden_start={prediction_hidden_start}, "
+            f"block_size={block_size}."
+        )
 
     conv_kernel_size = _parse_optional_int(
         dflash_cfg.get("conv_kernel_size", 0),
@@ -702,6 +765,7 @@ def parse_dflash_draft_config(*, draft_hf_config: Any) -> DFlashDraftConfig:
         num_hidden_layers=num_hidden_layers,
         num_target_layers=num_target_layers,
         block_size=block_size,
+        prediction_hidden_start=prediction_hidden_start,
         conv_kernel_size=conv_kernel_size,
         conv_group_size=conv_group_size,
         selector_rank=selector_rank,

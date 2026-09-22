@@ -85,7 +85,17 @@ class _FakeTpGroup:
 
 
 class TestDflashDraftSamplerVocabParallel(CustomTestCase):
-    def _run(self, vocab, hidden, bs, block_size, world, dtype, weight=None):
+    def _run(
+        self,
+        vocab,
+        hidden,
+        bs,
+        block_size,
+        world,
+        dtype,
+        weight=None,
+        prediction_hidden_start=1,
+    ):
         from sglang.srt.speculative.dflash_worker_v2 import _DflashDraftSampler
 
         device = torch.device("cuda" if _HAS_CUDA else "cpu")
@@ -105,6 +115,7 @@ class TestDflashDraftSamplerVocabParallel(CustomTestCase):
                 org_vocab_start=r * shard,
                 max_bs=bs,
                 tp_group=group,
+                prediction_hidden_start=prediction_hidden_start,
             )
             for r in range(world)
         ]
@@ -114,8 +125,11 @@ class TestDflashDraftSamplerVocabParallel(CustomTestCase):
                 group.rank, group.call_idx = r, 0
                 s(hs)
 
-        n = bs * (block_size - 1)
-        ref_hs = hs.view(bs, block_size, -1)[:, 1:, :].reshape(-1, hidden)
+        num_predictions = block_size - prediction_hidden_start
+        n = bs * num_predictions
+        ref_hs = hs.view(bs, block_size, -1)[:, prediction_hidden_start:, :].reshape(
+            -1, hidden
+        )
         ref = torch.argmax(torch.matmul(ref_hs.to(weight.dtype), weight.T), dim=-1).to(
             torch.long
         )
@@ -127,6 +141,17 @@ class TestDflashDraftSamplerVocabParallel(CustomTestCase):
     def test_matches_full_vocab_argmax(self):
         self._run(
             vocab=512, hidden=64, bs=3, block_size=8, world=4, dtype=torch.float32
+        )
+
+    def test_samples_anchor_hidden_for_deepspec_layout(self):
+        self._run(
+            vocab=512,
+            hidden=64,
+            bs=3,
+            block_size=7,
+            world=4,
+            dtype=torch.float32,
+            prediction_hidden_start=0,
         )
 
     def test_shard_boundary_tie_resolves_to_first_global_index(self):

@@ -4,12 +4,18 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+import sglang.srt.speculative.spec_info as spec_info_module
+from sglang.srt.layers.logits_processor import LogitsProcessorOutput
 from sglang.srt.models.dflash import (
     CandidateSelector,
     DFlash2DraftModel,
     _grouped_conv,
 )
 from sglang.srt.speculative.dflash_utils import parse_dflash_draft_config
+from sglang.srt.speculative.draft_worker_common import (
+    make_draft_sampler_capture_hook,
+)
+from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
 from sglang.test.ci.ci_register import register_cpu_ci
 
 register_cpu_ci(est_time=35, suite="base-a-test-cpu")
@@ -36,6 +42,73 @@ def test_dflash_unary_logit_transform():
             expected = torch.tanh(expected / config.final_logit_softcapping)
             expected *= config.final_logit_softcapping
         torch.testing.assert_close(actual, expected)
+
+
+def test_dflash_prediction_layout_defaults_to_legacy_skip_anchor():
+    config = parse_dflash_draft_config(
+        draft_hf_config={"num_hidden_layers": 5, "block_size": 7}
+    )
+    assert config.prediction_hidden_start == 1
+    assert config.resolve_num_predictions() == 6
+    assert config.resolve_verify_num_draft_tokens() == 7
+
+
+def test_dflash_prediction_layout_can_sample_anchor_row():
+    config = parse_dflash_draft_config(
+        draft_hf_config={
+            "num_hidden_layers": 5,
+            "block_size": 7,
+            "dflash_config": {"prediction_hidden_start": 0},
+        }
+    )
+    assert config.prediction_hidden_start == 0
+    assert config.resolve_num_predictions() == 7
+    assert config.resolve_verify_num_draft_tokens() == 8
+
+
+def test_dflash_prediction_layout_rejects_unsupported_start():
+    with pytest.raises(ValueError, match="must be 0"):
+        parse_dflash_draft_config(
+            draft_hf_config={
+                "num_hidden_layers": 5,
+                "block_size": 7,
+                "prediction_hidden_start": 2,
+            }
+        )
+
+
+@pytest.mark.parametrize(
+    ("algorithm", "is_draft_worker", "prediction_hidden_start", "expected_width"),
+    [
+        (SpeculativeAlgorithm.DFLASH, True, 0, 7),
+        (SpeculativeAlgorithm.LATENTSPEC, True, 0, 7),
+        (SpeculativeAlgorithm.DFLASH, True, 1, 8),
+        (SpeculativeAlgorithm.DFLASH, False, 0, 8),
+        (SpeculativeAlgorithm.DSPARK, True, 0, 7),
+    ],
+)
+def test_dflash_static_attention_width_matches_forward_layout(
+    monkeypatch,
+    algorithm,
+    is_draft_worker,
+    prediction_hidden_start,
+    expected_width,
+):
+    monkeypatch.setattr(
+        spec_info_module,
+        "get_spec_config",
+        lambda: SimpleNamespace(
+            speculative_dflash_prediction_hidden_start=prediction_hidden_start
+        ),
+    )
+
+    assert (
+        algorithm.get_num_tokens_per_req_for_target_verify(
+            num_draft_tokens=8,
+            is_draft_worker=is_draft_worker,
+        )
+        == expected_width
+    )
 
 
 def test_selector_greedy_row_walk_is_deterministic_in_a_mixed_batch():
@@ -241,6 +314,9 @@ def test_worker_folds_a_gate_admitted_quantized_selector_head(monkeypatch):
     )
     worker = SimpleNamespace(
         block_size=8,
+        draft_input_size=8,
+        prediction_hidden_start=1,
+        num_draft_predictions=7,
         selector=object(),
         ps=SimpleNamespace(tp_rank=0),
         draft_model=SimpleNamespace(lm_head=None),
@@ -261,6 +337,31 @@ def test_worker_folds_a_gate_admitted_quantized_selector_head(monkeypatch):
     worker.draft_model.lm_head = None
     assert worker_mod.DFlashWorkerV2._maybe_build_draft_sampler(worker) is None
     assert worker.draft_model.lm_head is None
+
+
+def test_draft_sampler_capture_hook_excludes_cuda_graph_padding():
+    captured = {}
+
+    def sampler(hidden_states, input_ids):
+        captured["hidden_states"] = hidden_states
+        captured["input_ids"] = input_ids
+
+    hook = make_draft_sampler_capture_hook(sampler)
+    hidden_states = torch.randn(16, 4)
+    input_ids = torch.arange(16)
+    hook(
+        None,
+        LogitsProcessorOutput(
+            next_token_logits=None,
+            hidden_states=hidden_states,
+        ),
+        SimpleNamespace(input_ids=input_ids),
+        14,
+    )
+
+    assert captured["hidden_states"].shape == (14, 4)
+    torch.testing.assert_close(captured["hidden_states"], hidden_states[:14])
+    torch.testing.assert_close(captured["input_ids"], input_ids[:14])
 
 
 def test_grouped_conv_supports_runtime_block_sizes():

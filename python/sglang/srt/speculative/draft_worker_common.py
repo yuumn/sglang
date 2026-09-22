@@ -138,13 +138,22 @@ def make_draft_block_spec_info(
 def make_draft_sampler_capture_hook(draft_sampler):
 
     def capture_hook(runner, out, forward_batch, num_tokens):
-        del runner, num_tokens
+        del runner
         if not isinstance(out, LogitsProcessorOutput) or out.hidden_states is None:
             raise RuntimeError(
                 "draft sampler set but the draft forward has no "
                 "hidden_states to capture into the graph."
             )
-        draft_sampler(out.hidden_states, forward_batch.input_ids)
+        # The CUDA graph runner may round the physical token buffer up to a
+        # capture-friendly size.  DFLASH's logical width is not necessarily a
+        # power of two (for example, 54 requests * 7 draft queries = 378 rows,
+        # backed by a 384-row graph).  Only the logical prefix is divisible by
+        # the draft block width; passing padded rows to the folded sampler makes
+        # its [bs, block_size, hidden] view invalid and would also sample padding.
+        draft_sampler(
+            out.hidden_states[:num_tokens],
+            forward_batch.input_ids[:num_tokens],
+        )
 
     return capture_hook
 

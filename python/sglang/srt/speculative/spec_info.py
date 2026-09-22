@@ -275,8 +275,25 @@ class SpeculativeAlgorithm(Enum):
         # graph support. We can use it for target verify, or we can use it for
         # other cases which is not target verify but fixed length prefill.
         # Here, we expose this interface to allow the other use cases.
-        if self.is_dspark() and is_draft_worker:
-            return num_draft_tokens - 1
+        if is_draft_worker:
+            if self.is_dspark():
+                return num_draft_tokens - 1
+            if self.is_dflash() or self.is_latentspec():
+                # DFLASH reuses TARGET_VERIFY as a fixed-width draft extend.
+                # The global num_draft_tokens is the target verify width
+                # (anchor + proposals), while the draft query width also
+                # depends on whether hidden row 0 produces a proposal:
+                #
+                #   start=0: draft N rows -> N proposals -> verify N + 1
+                #   start=1: draft N rows -> N - 1 proposals -> verify N
+                #
+                # Static attention metadata (notably FA3) must use the draft
+                # query width here; otherwise it launches an N+1-query kernel
+                # over an N-query input and can access memory out of bounds.
+                prediction_hidden_start = int(
+                    get_spec_config().speculative_dflash_prediction_hidden_start
+                )
+                return num_draft_tokens - 1 + prediction_hidden_start
         return num_draft_tokens
 
     def get_num_tokens_per_bs_for_target_verify(

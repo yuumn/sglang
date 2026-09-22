@@ -187,6 +187,18 @@ def handle_speculative_decoding(server_args: ServerArgs) -> None:
 def _handle_dflash(server_args: ServerArgs) -> None:
     cfg = resolving_view(server_args)
 
+    prediction_hidden_start_override = cfg.speculative_dflash_prediction_hidden_start
+    if prediction_hidden_start_override is not None:
+        prediction_hidden_start_override = int(prediction_hidden_start_override)
+        if prediction_hidden_start_override not in (0, 1):
+            raise ValueError(
+                "--speculative-dflash-prediction-hidden-start must be 0 or 1, "
+                f"got {prediction_hidden_start_override}."
+            )
+    elif cfg.speculative_algorithm == "LATENTSPEC":
+        # LatentSpec checkpoints train every proposal row, including row 0.
+        prediction_hidden_start_override = 0
+
     if not (cfg.device.startswith("cuda") or cfg.device == "npu"):
         raise ValueError(
             "DFLASH speculative decoding only supports CUDA and NPU devices."
@@ -211,7 +223,8 @@ def _handle_dflash(server_args: ServerArgs) -> None:
     # affect generic scheduler/KV-cache accounting (buffer sizing, KV freeing,
     # RoPE reservation). Force them to 1 to avoid surprising memory behavior.
     #
-    # For DFlash, the natural unit is `block_size` (verify window length).
+    # Generic scheduler accounting uses the verify-window length. A checkpoint's
+    # block_size may instead be its draft-query width, so the two are resolved below.
     if cfg.speculative_num_steps is None:
         declare_resolution(
             server_args,
@@ -267,13 +280,18 @@ def _handle_dflash(server_args: ServerArgs) -> None:
             speculative_num_draft_tokens=int(cfg.speculative_dflash_block_size),
         )
 
-    if cfg.speculative_num_draft_tokens is None:
-        from sglang.srt.speculative.dflash_utils import (
-            parse_dflash_draft_config,
-        )
+    # Resolve the checkpoint's draft-query layout before attention backends are
+    # constructed. Static backends such as FA3 need this value to distinguish
+    # the draft query width from the target verify width.
+    draft_config = None
+    draft_config_error = None
+    if (
+        prediction_hidden_start_override is None
+        or cfg.speculative_num_draft_tokens is None
+    ):
+        from sglang.srt.speculative.dflash_utils import parse_dflash_draft_config
 
         model_override_args = json.loads(cfg.json_model_override_args)
-        inferred_block_size = None
         try:
             from sglang.srt.utils.hf_transformers_utils import get_config
 
@@ -283,33 +301,48 @@ def _handle_dflash(server_args: ServerArgs) -> None:
                 revision=cfg.speculative_draft_model_revision,
                 model_override_args=model_override_args,
             )
-            inferred_block_size = parse_dflash_draft_config(
-                draft_hf_config=draft_hf_config
-            ).resolve_block_size(default=None)
-            # MySpec's checkpoint block_size counts predictions, while the
-            # shared linear verify protocol counts the anchor as well.
-            if (
-                inferred_block_size is not None
-                and cfg.speculative_algorithm == "LATENTSPEC"
-            ):
-                inferred_block_size += 1
+            draft_config = parse_dflash_draft_config(draft_hf_config=draft_hf_config)
         except Exception as e:
+            draft_config_error = e
+
+    if prediction_hidden_start_override is None:
+        if draft_config is not None:
+            prediction_hidden_start_override = draft_config.prediction_hidden_start
+        else:
+            prediction_hidden_start_override = 1
             logger.warning(
-                "Failed to infer DFLASH block_size from draft model config; "
-                "defaulting speculative_num_draft_tokens to 16. Error: %s",
-                e,
+                "Failed to infer DFLASH prediction_hidden_start from the draft "
+                "model config; defaulting to the legacy value 1. Error: %s",
+                draft_config_error,
             )
 
-        if inferred_block_size is None:
-            inferred_block_size = 16
+    declare_resolution(
+        server_args,
+        "_handle_dflash",
+        speculative_dflash_prediction_hidden_start=int(
+            prediction_hidden_start_override
+        ),
+    )
+
+    if cfg.speculative_num_draft_tokens is None:
+        inferred_verify_size = None
+        if draft_config is not None:
+            inferred_verify_size = draft_config.resolve_verify_num_draft_tokens(
+                prediction_hidden_start=prediction_hidden_start_override
+            )
+
+        if inferred_verify_size is None:
+            inferred_verify_size = 16 - prediction_hidden_start_override + 1
             logger.warning(
-                "speculative_num_draft_tokens is not set; defaulting to %d for DFLASH.",
-                inferred_block_size,
+                "Failed to infer DFLASH verify size from the draft model config; "
+                "defaulting speculative_num_draft_tokens to %d. Error: %s",
+                inferred_verify_size,
+                draft_config_error,
             )
         declare_resolution(
             server_args,
             "_handle_dflash",
-            speculative_num_draft_tokens=inferred_block_size,
+            speculative_num_draft_tokens=inferred_verify_size,
         )
 
     if cfg.speculative_draft_window_size is not None:
