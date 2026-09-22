@@ -4,7 +4,9 @@ from types import SimpleNamespace
 import pytest
 import torch
 
+import sglang.srt.arg_groups.speculative_hook as speculative_hook_module
 import sglang.srt.speculative.spec_info as spec_info_module
+from sglang.srt.arg_groups.model_override_base import resolved_view
 from sglang.srt.layers.logits_processor import LogitsProcessorOutput
 from sglang.srt.models.dflash import (
     CandidateSelector,
@@ -16,6 +18,7 @@ from sglang.srt.speculative.draft_worker_common import (
     make_draft_sampler_capture_hook,
 )
 from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
+from sglang.srt.server_args import ServerArgs
 from sglang.test.ci.ci_register import register_cpu_ci
 
 register_cpu_ci(est_time=35, suite="base-a-test-cpu")
@@ -81,7 +84,7 @@ def test_dflash_prediction_layout_rejects_unsupported_start():
     ("algorithm", "is_draft_worker", "prediction_hidden_start", "expected_width"),
     [
         (SpeculativeAlgorithm.DFLASH, True, 0, 7),
-        (SpeculativeAlgorithm.LATENTSPEC, True, 0, 7),
+        (SpeculativeAlgorithm.LATENTSPEC, True, 1, 8),
         (SpeculativeAlgorithm.DFLASH, True, 1, 8),
         (SpeculativeAlgorithm.DFLASH, False, 0, 8),
         (SpeculativeAlgorithm.DSPARK, True, 0, 7),
@@ -109,6 +112,34 @@ def test_dflash_static_attention_width_matches_forward_layout(
         )
         == expected_width
     )
+
+
+def test_latentspec_resolves_proposal_width_to_anchor_padded_verify_width(
+    monkeypatch,
+):
+    from sglang.srt.utils import hf_transformers_utils
+
+    monkeypatch.setattr(
+        hf_transformers_utils,
+        "get_config",
+        lambda *args, **kwargs: {
+            "architectures": ["Qwen3MySpecModel"],
+            "block_size": 7,
+            "num_hidden_layers": 3,
+        },
+    )
+    server_args = ServerArgs(
+        model_path="target",
+        speculative_algorithm="LATENTSPEC",
+        speculative_draft_model_path="draft",
+        device="cuda",
+    )
+
+    speculative_hook_module._handle_dflash(server_args)
+    cfg = resolved_view(server_args)
+
+    assert cfg.speculative_dflash_prediction_hidden_start == 1
+    assert cfg.speculative_num_draft_tokens == 8
 
 
 def test_selector_greedy_row_walk_is_deterministic_in_a_mixed_batch():

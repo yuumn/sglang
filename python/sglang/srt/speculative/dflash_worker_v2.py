@@ -360,15 +360,24 @@ class DFlashWorkerV2(BaseSpecWorker):
             draft_hf_config=self.draft_model_runner.model_config.hf_config
         )
         spec_config = get_spec()
-        model_block_size = draft_config.block_size
+        is_latentspec = spec_config.speculative_algorithm == "LATENTSPEC"
+        # MySpec's checkpoint block_size is the proposal count, while the
+        # native runtime model exposes the shared DFlash input width
+        # (anchor + proposal rows).  Plain DFlash checkpoints store their
+        # draft input width directly in block_size.
+        model_block_size = (
+            getattr(self.draft_model, "block_size", None)
+            if is_latentspec
+            else draft_config.block_size
+        )
         if model_block_size is None:
             model_block_size = getattr(self.draft_model, "block_size", None)
 
         prediction_hidden_start = spec_config.speculative_dflash_prediction_hidden_start
         if prediction_hidden_start is None:
             prediction_hidden_start = (
-                0
-                if spec_config.speculative_algorithm == "LATENTSPEC"
+                1
+                if is_latentspec
                 else draft_config.prediction_hidden_start
             )
         self.prediction_hidden_start = int(prediction_hidden_start)

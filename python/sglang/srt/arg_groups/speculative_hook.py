@@ -196,8 +196,10 @@ def _handle_dflash(server_args: ServerArgs) -> None:
                 f"got {prediction_hidden_start_override}."
             )
     elif cfg.speculative_algorithm == "LATENTSPEC":
-        # LatentSpec checkpoints train every proposal row, including row 0.
-        prediction_hidden_start_override = 0
+        # Qwen3MySpecModel prepends an unused anchor row to its proposal hidden
+        # states.  The seven trained proposal rows therefore live at indices
+        # 1..7 in the shared DFlash sampler layout.
+        prediction_hidden_start_override = 1
 
     if not (cfg.device.startswith("cuda") or cfg.device == "npu"):
         raise ValueError(
@@ -327,9 +329,16 @@ def _handle_dflash(server_args: ServerArgs) -> None:
     if cfg.speculative_num_draft_tokens is None:
         inferred_verify_size = None
         if draft_config is not None:
-            inferred_verify_size = draft_config.resolve_verify_num_draft_tokens(
-                prediction_hidden_start=prediction_hidden_start_override
-            )
+            if cfg.speculative_algorithm == "LATENTSPEC":
+                # MySpec config.block_size counts proposal rows.  The shared
+                # linear verify window also contains the anchor token.
+                proposal_size = draft_config.resolve_block_size(default=None)
+                if proposal_size is not None:
+                    inferred_verify_size = int(proposal_size) + 1
+            else:
+                inferred_verify_size = draft_config.resolve_verify_num_draft_tokens(
+                    prediction_hidden_start=prediction_hidden_start_override
+                )
 
         if inferred_verify_size is None:
             inferred_verify_size = 16 - prediction_hidden_start_override + 1
