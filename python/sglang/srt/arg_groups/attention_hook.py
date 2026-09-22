@@ -410,7 +410,7 @@ def handle_linear_attn_backend(server_args: Any):
             # refusing those combinations.
             _algo = (cfg.speculative_algorithm or "").upper()
             verify = cfg.linear_attn_verify_backend
-            if _algo not in ("DSPARK", "DFLASH") or verify not in (
+            if _algo not in ("DSPARK", "DFLASH", "LATENTSPEC") or verify not in (
                 "triton",
                 "nv_cutedsl",
             ):

@@ -147,6 +147,11 @@ def _resolve_dflash_aux_hidden_state(
             draft_hf_config=draft_model_config.hf_config
         )
         draft_num_layers = dflash_draft_config.require_num_layers()
+        draft_cache_num_layers = (
+            int(draft_model_config.num_attention_layers)
+            if spec_algorithm.is_latentspec()
+            else int(draft_num_layers)
+        )
         trained_target_layers = dflash_draft_config.num_target_layers
 
         target_num_layers = getattr(
@@ -200,11 +205,11 @@ def _resolve_dflash_aux_hidden_state(
                 target_layer_ids = list(dspark_draft_config.target_layer_ids)
 
         config.dflash_use_aux_hidden_state = True
-        config.dflash_draft_num_layers = int(draft_num_layers)
+        config.dflash_draft_num_layers = draft_cache_num_layers
         config.dflash_target_layer_ids = target_layer_ids
         config.dflash_draft_cell_size_per_token = _resolve_dflash_draft_cell_size(
             draft_model_config=draft_model_config,
-            draft_num_layers=int(draft_num_layers),
+            draft_num_layers=draft_cache_num_layers,
         )
 
 

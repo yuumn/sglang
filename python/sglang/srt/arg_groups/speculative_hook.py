@@ -141,7 +141,7 @@ def handle_speculative_decoding(server_args: ServerArgs) -> None:
             "handle_speculative_decoding",
             speculative_draft_window_size=window_size,
         )
-        if cfg.speculative_algorithm not in ("EAGLE3", "DFLASH"):
+        if cfg.speculative_algorithm not in ("EAGLE3", "DFLASH", "LATENTSPEC"):
             logger.warning(
                 "--speculative-draft-window-size has no effect with "
                 "speculative_algorithm=%s (honored by Llama EAGLE-3 and DFLASH only).",
@@ -286,6 +286,13 @@ def _handle_dflash(server_args: ServerArgs) -> None:
             inferred_block_size = parse_dflash_draft_config(
                 draft_hf_config=draft_hf_config
             ).resolve_block_size(default=None)
+            # MySpec's checkpoint block_size counts predictions, while the
+            # shared linear verify protocol counts the anchor as well.
+            if (
+                inferred_block_size is not None
+                and cfg.speculative_algorithm == "LATENTSPEC"
+            ):
+                inferred_block_size += 1
         except Exception as e:
             logger.warning(
                 "Failed to infer DFLASH block_size from draft model config; "

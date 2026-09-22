@@ -85,6 +85,9 @@ class CustomSpecAlgo:
     def is_dspark(self) -> bool:
         return False
 
+    def is_latentspec(self) -> bool:
+        return False
+
     def is_dflash_family(self) -> bool:
         return False
 

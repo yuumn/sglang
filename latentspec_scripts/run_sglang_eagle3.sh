@@ -16,10 +16,14 @@ python -m sglang.launch_server \
   --tp-size 1 \
   --trust-remote-code \
   --speculative-algorithm EAGLE3 \
-  --speculative-draft-model-path "${DRAFT_MODEL}" \
+  --speculative-draft-model-path ${DRAFT_MODEL} \
+  --speculative-num-draft-tokens 8
   # --dtype bfloat16 \
   # --attention-backend triton \
   # --speculative-draft-attention-backend triton 
   # --mem-fraction-static 0.20 
   # --disable-cuda-graph 
+  # --disable-overlap-schedule \
+  # --cuda-graph-backend-decode disabled \
+  # --cuda-graph-backend-prefill disabled
 

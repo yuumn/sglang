@@ -41,6 +41,7 @@ class SpeculativeAlgorithm(Enum):
     EAGLE = auto()
     EAGLE3 = auto()
     FROZEN_KV_MTP = auto()
+    LATENTSPEC = auto()
     STANDALONE = auto()
     NGRAM = auto()
     NONE = auto()
@@ -117,8 +118,11 @@ class SpeculativeAlgorithm(Enum):
     def is_dspark(self) -> bool:
         return self == SpeculativeAlgorithm.DSPARK
 
+    def is_latentspec(self) -> bool:
+        return self == SpeculativeAlgorithm.LATENTSPEC
+
     def is_dflash_family(self) -> bool:
-        return self.is_dflash() or self.is_dspark()
+        return self.is_dflash() or self.is_dspark() or self.is_latentspec()
 
     def is_standalone(self) -> bool:
         return self == SpeculativeAlgorithm.STANDALONE
@@ -140,6 +144,7 @@ class SpeculativeAlgorithm(Enum):
             SpeculativeAlgorithm.EAGLE3,
             SpeculativeAlgorithm.DFLASH,
             SpeculativeAlgorithm.DSPARK,
+            SpeculativeAlgorithm.LATENTSPEC,
         )
 
     def supports_ragged_verify(self) -> bool:
@@ -228,7 +233,7 @@ class SpeculativeAlgorithm(Enum):
 
         read_ragged_verify_mode()
 
-        if self.is_dflash():
+        if self.is_dflash() or self.is_latentspec():
             _handle_dflash(server_args)
         elif self.is_dspark():
             _handle_dspark(server_args)
@@ -310,6 +315,13 @@ class SpeculativeAlgorithm(Enum):
             )
 
             return DSparkWorkerV2
+
+        if self.is_latentspec():
+            from sglang.srt.speculative.latentspec_worker_v2 import (
+                LatentSpecWorkerV2,
+            )
+
+            return LatentSpecWorkerV2
 
         if self.is_frozen_kv_mtp():
             # V2 worker drives both overlap and non-overlap (scheduler runs it
