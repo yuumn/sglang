@@ -13,7 +13,10 @@ from sglang.srt.models.dflash import (
     DFlash2DraftModel,
     _grouped_conv,
 )
-from sglang.srt.speculative.dflash_utils import parse_dflash_draft_config
+from sglang.srt.speculative.dflash_utils import (
+    parse_dflash_draft_config,
+    sample_latentspec_draft_tokens,
+)
 from sglang.srt.speculative.draft_worker_common import (
     make_draft_sampler_capture_hook,
 )
@@ -140,6 +143,97 @@ def test_latentspec_resolves_proposal_width_to_anchor_padded_verify_width(
 
     assert cfg.speculative_dflash_prediction_hidden_start == 1
     assert cfg.speculative_num_draft_tokens == 8
+
+
+def test_latentspec_temperature_sampling_matches_reference_evaluator():
+    """MySpec independently samples every proposal row and retains fp32 q."""
+    logits = torch.tensor(
+        [
+            [[0.0, 1.0, 2.0], [2.0, -1.0, 0.5]],
+            [[1.0, 3.0, -2.0], [-2.0, 0.0, 4.0]],
+        ],
+        dtype=torch.bfloat16,
+    )
+    temperatures = torch.tensor([0.7, 1.3], dtype=torch.float32)
+    greedy_mask = torch.tensor([False, True])
+
+    reference_sample_probs = torch.softmax(
+        logits / temperatures.to(logits.dtype)[:, None, None], dim=-1
+    )
+    expected_generator = torch.Generator().manual_seed(1234)
+    sampled = torch.multinomial(
+        reference_sample_probs.reshape(-1, reference_sample_probs.shape[-1]),
+        num_samples=1,
+        generator=expected_generator,
+    ).reshape(2, 2)
+    expected_tokens = sampled.clone()
+    expected_tokens[1] = logits[1].argmax(dim=-1)
+    reference_q = torch.softmax(
+        logits.float() / temperatures[:, None, None], dim=-1
+    )
+    reference_q[1].zero_()
+    reference_q[1].scatter_(-1, expected_tokens[1].unsqueeze(-1), 1.0)
+
+    actual_tokens, actual_q = sample_latentspec_draft_tokens(
+        draft_logits=logits,
+        temperatures=temperatures,
+        greedy_mask=greedy_mask,
+        is_any_greedy=True,
+        generator=torch.Generator().manual_seed(1234),
+    )
+
+    torch.testing.assert_close(actual_tokens, expected_tokens)
+    torch.testing.assert_close(actual_q, reference_q)
+    assert actual_q.dtype == torch.float32
+    torch.testing.assert_close(actual_q.sum(dim=-1), torch.ones(2, 2))
+
+
+def test_latentspec_accept_uses_full_draft_distribution(monkeypatch):
+    from sglang.srt.speculative import dflash_worker_v2 as worker_mod
+
+    captured = {}
+
+    def fake_accept_sampling(**kwargs):
+        captured.update(kwargs)
+        return (
+            torch.tensor([1], dtype=torch.int32),
+            torch.tensor([9], dtype=torch.int64),
+            torch.tensor([0], dtype=torch.int32),
+        )
+
+    monkeypatch.setattr(worker_mod, "accept_sampling", fake_accept_sampling)
+    worker = SimpleNamespace(
+        verify_num_draft_tokens=3,
+        _selector_sample=None,
+        _tp_sync=SimpleNamespace(sync=lambda site, value: value),
+    )
+    candidates = torch.tensor([[5, 6, 7]], dtype=torch.int64)
+    target_logits = torch.randn(3, 11)
+    draft_probs = torch.softmax(torch.randn(1, 2, 11), dim=-1)
+    draft_input = object()
+    sampling_info = object()
+
+    accept_len, commit_lens, bonus, out_tokens, _, target_predict = (
+        worker_mod.DFlashWorkerV2._accept_block(
+            worker,
+            candidates=candidates,
+            next_token_logits=target_logits,
+            sampling_info=sampling_info,
+            draft_input=draft_input,
+            prefix_lens=torch.tensor([4]),
+            bs=1,
+            draft_probs=draft_probs,
+        )
+    )
+
+    assert captured["draft_probs"] is draft_probs
+    assert captured["gamma"] == 2
+    assert captured["verify_num_draft_tokens"] == 3
+    torch.testing.assert_close(accept_len, torch.tensor([1], dtype=torch.int32))
+    torch.testing.assert_close(commit_lens, torch.tensor([2], dtype=torch.int32))
+    torch.testing.assert_close(bonus, torch.tensor([9], dtype=torch.int64))
+    torch.testing.assert_close(out_tokens, torch.tensor([[6, 9, 0]]))
+    assert target_predict is None
 
 
 def test_selector_greedy_row_walk_is_deterministic_in_a_mixed_batch():

@@ -52,6 +52,7 @@ from sglang.srt.speculative.dflash_utils import (
     is_dense_head_weight,
     is_dflash_sampling_verify_available,
     parse_dflash_draft_config,
+    sample_latentspec_draft_tokens,
 )
 from sglang.srt.speculative.draft_worker_common import (
     build_block_pos_offsets,
@@ -361,6 +362,7 @@ class DFlashWorkerV2(BaseSpecWorker):
         )
         spec_config = get_spec()
         is_latentspec = spec_config.speculative_algorithm == "LATENTSPEC"
+        self.is_latentspec = is_latentspec
         # MySpec's checkpoint block_size is the proposal count, while the
         # native runtime model exposes the shared DFlash input width
         # (anchor + proposal rows).  Plain DFlash checkpoints store their
@@ -1407,6 +1409,76 @@ class DFlashWorkerV2(BaseSpecWorker):
 
         return out_tokens
 
+    def _sample_latentspec_draft_block(
+        self,
+        *,
+        hidden_states: torch.Tensor,
+        lm_head,
+        bs: int,
+        sampling_info,
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """Project and sample MySpec proposal rows exactly like its evaluator.
+
+        LatentSpec currently enforces TP=1, so the target LM head contains the
+        complete vocabulary locally.  Keeping that restriction explicit avoids
+        accidentally treating a vocabulary shard as a normalized proposal
+        distribution if TP support is added later.
+        """
+        tp_size = int(get_tp_group().world_size)
+        if tp_size != 1:
+            raise RuntimeError(
+                "LATENTSPEC temperature sampling currently requires tp=1, got "
+                f"tp_size={tp_size}."
+            )
+        weight = getattr(lm_head, "weight", None)
+        if not is_dense_head_weight(weight):
+            raise RuntimeError(
+                "LATENTSPEC temperature sampling requires a dense target lm_head "
+                "so the full draft distribution q can be verified."
+            )
+
+        vocab_size = int(self.model_runner.model_config.vocab_size)
+        if hasattr(lm_head, "shard_indices"):
+            shard = lm_head.shard_indices
+            num_org = int(shard.num_org_elements)
+            org_vocab_start = int(shard.org_vocab_start_index)
+            num_added = int(shard.num_added_elements)
+            if org_vocab_start != 0 or num_org != vocab_size or num_added != 0:
+                raise RuntimeError(
+                    "LATENTSPEC temperature sampling needs one contiguous, full "
+                    "base-vocabulary lm_head shard; got "
+                    f"org_vocab_start={org_vocab_start}, num_org={num_org}, "
+                    f"num_added={num_added}, vocab_size={vocab_size}."
+                )
+            weight = weight[:num_org]
+        else:
+            if int(weight.shape[0]) < vocab_size:
+                raise RuntimeError(
+                    "LATENTSPEC target lm_head is smaller than the configured "
+                    f"vocabulary: {weight.shape[0]} < {vocab_size}."
+                )
+            weight = weight[:vocab_size]
+
+        hidden_states = hidden_states.reshape(
+            bs, self.num_draft_predictions, hidden_states.shape[-1]
+        )
+        flat_hidden = hidden_states.reshape(-1, hidden_states.shape[-1])
+        if flat_hidden.dtype != weight.dtype:
+            flat_hidden = flat_hidden.to(weight.dtype)
+        draft_logits = torch.matmul(flat_hidden, weight.T).view(
+            bs, self.num_draft_predictions, vocab_size
+        )
+        temperatures = sampling_info.temperatures.view(-1).float().clamp_min(1e-5)
+        greedy_mask = resolve_greedy_mask(
+            bs=bs, sampling_info=sampling_info, device=draft_logits.device
+        )
+        return sample_latentspec_draft_tokens(
+            draft_logits=draft_logits,
+            temperatures=temperatures,
+            greedy_mask=greedy_mask,
+            is_any_greedy=bool(sampling_info.is_any_greedy),
+        )
+
     def _append_target_hidden_to_draft_kv_by_loc(
         self,
         *,
@@ -1745,10 +1817,38 @@ class DFlashWorkerV2(BaseSpecWorker):
         draft_input,
         prefix_lens: torch.Tensor,
         bs: int,
+        draft_probs: Optional[torch.Tensor] = None,
     ):
         new_seq_lens = None
         target_predict = None
-        if self._selector_sample is not None:
+        if draft_probs is not None:
+            gamma = self.verify_num_draft_tokens - 1
+            expected_shape = (
+                bs,
+                gamma,
+                int(next_token_logits.shape[-1]),
+            )
+            if tuple(draft_probs.shape) != expected_shape:
+                raise RuntimeError(
+                    "LATENTSPEC draft probability shape mismatch: expected "
+                    f"{expected_shape}, got {tuple(draft_probs.shape)}."
+                )
+            accept_len, bonus, _ = accept_sampling(
+                candidates=candidates,
+                target_logits=next_token_logits,
+                draft_probs=draft_probs,
+                sampling_info=sampling_info,
+                draft_input=draft_input,
+                gamma=gamma,
+                verify_num_draft_tokens=self.verify_num_draft_tokens,
+                cutoff_verify_lens=None,
+            )
+            self._tp_sync.sync(SpecTpSyncSite.DFLASH_ACCEPT_SAMPLE, accept_len)
+            self._tp_sync.sync(SpecTpSyncSite.DFLASH_ACCEPT_SAMPLE, bonus)
+            accept_len = accept_len.to(torch.int32)
+            bonus = bonus.to(torch.int64)
+            out_tokens, commit_lens = _commit_accept(candidates, accept_len, bonus)
+        elif self._selector_sample is not None:
             selector_candidate_ids, selector_q_rows = self._selector_sample
             accept_len, bonus = self._selector_sampling_accept(
                 candidates=candidates,
@@ -1821,12 +1921,13 @@ class DFlashWorkerV2(BaseSpecWorker):
 
     def _validate_phase1_sampling_support(self, batch: ScheduleBatch) -> None:
         sampling_info = batch.sampling_info
-        # A selector draft carries its own q and verifies through accept_sampling, so
-        # it never falls back to greedy argmax however this build was compiled.
+        # Selector and LatentSpec drafts carry their own q and verify through
+        # accept_sampling, so neither uses the target-only fallback below.
         if (
             sampling_info is None
             or sampling_info.is_all_greedy
             or self.selector is not None
+            or self.is_latentspec
         ):
             return
 
@@ -2157,6 +2258,7 @@ class DFlashWorkerV2(BaseSpecWorker):
             capture_hidden_mode=CaptureHiddenMode.NULL,
         )
 
+        draft_probs = None
         if self.selector is not None:
             self._selector_sample = None
             if self._draft_sampler is not None:
@@ -2194,12 +2296,21 @@ class DFlashWorkerV2(BaseSpecWorker):
             draft_hidden = draft_hidden.view(bs, draft_input_size, -1)
             start = self.prediction_hidden_start
             end = start + self.num_draft_predictions
-            draft_next = self._greedy_sample_from_vocab_parallel_head(
-                hidden_states=draft_hidden[:, start:end, :].reshape(
-                    -1, draft_hidden.shape[-1]
-                ),
-                lm_head=lm_head,
-            ).view(bs, self.num_draft_predictions)
+            prediction_hidden = draft_hidden[:, start:end, :]
+            if self.is_latentspec and not _is_all_greedy(batch.sampling_info):
+                draft_next, draft_probs = self._sample_latentspec_draft_block(
+                    hidden_states=prediction_hidden,
+                    lm_head=lm_head,
+                    bs=bs,
+                    sampling_info=batch.sampling_info,
+                )
+            else:
+                draft_next = self._greedy_sample_from_vocab_parallel_head(
+                    hidden_states=prediction_hidden.reshape(
+                        -1, draft_hidden.shape[-1]
+                    ),
+                    lm_head=lm_head,
+                ).view(bs, self.num_draft_predictions)
 
         draft_tokens = self._draft_block_tokens_buf[:bs]
         draft_tokens[:, 0].copy_(block_ids[:, 0])
@@ -2291,6 +2402,7 @@ class DFlashWorkerV2(BaseSpecWorker):
             draft_input=draft_input,
             prefix_lens=prefix_lens,
             bs=bs,
+            draft_probs=draft_probs,
         )
 
         if SIMULATE_ACC_LEN > 0:

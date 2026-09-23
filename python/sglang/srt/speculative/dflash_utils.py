@@ -789,6 +789,83 @@ def is_dense_head_weight(weight: Any) -> bool:
     return weight is not None and weight.dtype in _DENSE_HEAD_DTYPES
 
 
+def sample_latentspec_draft_tokens(
+    *,
+    draft_logits: torch.Tensor,
+    temperatures: torch.Tensor,
+    greedy_mask: torch.Tensor,
+    is_any_greedy: bool,
+    generator: Optional[torch.Generator] = None,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Sample a MySpec block and retain the exact proposal distribution ``q``.
+
+    The reference MySpec evaluator samples every proposal row independently from
+    ``softmax(draft_logits / temperature)``.  Its verifier then needs the complete
+    distribution from each row for the ``min(1, p / q)`` acceptance test and the
+    ``relu(p - q)`` rejection distribution.  Plain DFlash only retained argmax
+    tokens, which is insufficient for that algorithm when temperature is nonzero.
+
+    Greedy requests can share a batch with sampling requests in SGLang.  Represent
+    their deterministic proposal as a point mass so the same verifier remains
+    mathematically equivalent to greedy verification for those rows.
+    """
+    if draft_logits.ndim != 3:
+        raise ValueError(
+            "draft_logits must be [batch, proposals, vocab], got "
+            f"shape={tuple(draft_logits.shape)}."
+        )
+    bs, num_proposals, vocab_size = draft_logits.shape
+    if tuple(temperatures.shape) not in ((bs,), (bs, 1)):
+        raise ValueError(
+            "temperatures must have one value per request, got "
+            f"shape={tuple(temperatures.shape)} for batch={bs}."
+        )
+    if tuple(greedy_mask.shape) != (bs,):
+        raise ValueError(
+            "greedy_mask must have shape [batch], got "
+            f"shape={tuple(greedy_mask.shape)} for batch={bs}."
+        )
+
+    temperatures = temperatures.reshape(bs).to(
+        device=draft_logits.device, dtype=torch.float32
+    )
+    greedy_mask = greedy_mask.to(device=draft_logits.device, dtype=torch.bool)
+
+    # Match sample_tokens() in the evaluator first: it retains the logits dtype
+    # during temperature scaling/softmax (normally bf16 for this checkpoint).
+    sample_temperatures = temperatures.to(dtype=draft_logits.dtype)
+    sample_probs = torch.softmax(
+        draft_logits / sample_temperatures[:, None, None], dim=-1
+    )
+    sampled_tokens = torch.multinomial(
+        sample_probs.reshape(-1, vocab_size),
+        num_samples=1,
+        generator=generator,
+    ).reshape(bs, num_proposals)
+    del sample_probs
+
+    # logits_to_probs() is called separately by the evaluator and explicitly
+    # computes the q retained for verification in fp32.
+    draft_probs = torch.softmax(
+        draft_logits.float() / temperatures[:, None, None], dim=-1
+    )
+    argmax_tokens = torch.argmax(draft_logits, dim=-1)
+    tokens = torch.where(greedy_mask[:, None], argmax_tokens, sampled_tokens)
+
+    if is_any_greedy:
+        # Avoid allocating a second [B, proposals, vocab] one-hot tensor.
+        draft_probs.mul_((~greedy_mask)[:, None, None])
+        draft_probs.scatter_add_(
+            -1,
+            argmax_tokens.unsqueeze(-1),
+            greedy_mask[:, None, None]
+            .expand(bs, num_proposals, 1)
+            .to(draft_probs.dtype),
+        )
+
+    return tokens.to(torch.int64), draft_probs.contiguous()
+
+
 def can_dflash_slice_qkv_weight(qkv_proj: Any) -> Tuple[bool, str]:
     """Validate whether DFlash can slice KV weights from a fused QKV linear layer."""
     quant_method = getattr(qkv_proj, "quant_method", None)
