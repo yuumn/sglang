@@ -319,8 +319,13 @@ class FusedKVMaterializeHelper:
                     f"got (rotary_dim={layer_rotary_dim}, neox={layer_is_neox}) at layer {layer_id}."
                 )
 
-            qkv_w = attn.qkv_proj.weight
-            kv_weight = qkv_w[attn.q_size : attn.q_size + 2 * attn.kv_size]
+            # Most DFlash models keep context K/V inside their fused QKV
+            # projection. LatentSpec has independently trained context K/V
+            # weights, exposed as one already-packed projection.
+            kv_weight = getattr(attn, "context_kv_weight", None)
+            if kv_weight is None:
+                qkv_w = attn.qkv_proj.weight
+                kv_weight = qkv_w[attn.q_size : attn.q_size + 2 * attn.kv_size]
             kv_weights.append(kv_weight)
             k_norm_weights.append(attn.k_norm.weight)
             eps_values.append(float(attn.k_norm.variance_epsilon))

@@ -820,6 +820,8 @@ def extend_attention_fwd(
     score_mod=None,
     aux_tensors=None,
     extend_seq_lens_cpu=None,
+    block_m_override: int | None = None,
+    num_warps_override: int | None = None,
 ):
     """
     q_extend, k_extend, v_extend, o_extend: contiguous tensors
@@ -832,6 +834,8 @@ def extend_attention_fwd(
     respectively so DCP can compute those two parts separately.
     ``score_mod`` / ``aux_tensors`` add a custom term to the attention logits;
     see triton_ops/score_mod.py for the contract.
+    ``block_m_override`` / ``num_warps_override`` let callers with a fixed,
+    unusually short query block avoid the generic prefill tile geometry.
     """
     Lq, Lk, Lv = (
         q_extend.shape[-1],
@@ -843,6 +847,10 @@ def extend_attention_fwd(
     BLOCK_DMODEL, BLOCK_DPE, BLOCK_DV, BLOCK_M, BLOCK_N, num_warps = (
         _get_block_sizes_for_extend_attention(Lq, Lv)
     )
+    if block_m_override is not None:
+        BLOCK_M = int(block_m_override)
+    if num_warps_override is not None:
+        num_warps = int(num_warps_override)
 
     sm_scale = sm_scale or 1.0 / (Lq**0.5)
     batch_size, head_num = qo_indptr.shape[0] - 1, q_extend.shape[1]

@@ -18,6 +18,11 @@ class LatentSpecWorkerV2(DFlashWorkerV2):
                 "LATENTSPEC requires a Qwen3MySpecModel draft checkpoint; "
                 f"missing model attributes: {missing}."
             )
+        if self.prediction_hidden_start != 0:
+            raise ValueError(
+                "LATENTSPEC returns only proposal hidden rows, so its prediction "
+                f"layout must start at zero, got {self.prediction_hidden_start}."
+            )
 
     def alloc_memory_pool(self, *args, **kwargs):
         super().alloc_memory_pool(*args, **kwargs)
@@ -27,6 +32,7 @@ class LatentSpecWorkerV2(DFlashWorkerV2):
         )
 
     def init_cuda_graphs(self):
-        # The draft has two different logical widths (latent and proposal), so
-        # it intentionally stays eager until a dedicated graph runner exists.
-        self._draft_worker.init_cuda_graphs(capture_decode_cuda_graph=False)
+        # The outer protocol carries the seven proposal rows. The draft model
+        # internally captures a four-row latent stage followed by the seven-row
+        # proposal stage through the Triton backend's stage metadata.
+        super().init_cuda_graphs()

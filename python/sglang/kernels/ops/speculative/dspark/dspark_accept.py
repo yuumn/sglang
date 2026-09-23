@@ -9,6 +9,7 @@ import triton.language as tl
 
 from sglang.kernels.ops.speculative.dspark.dispatch import inputs_on_cuda
 from sglang.kernels.ops.speculative.reject_sampling import (
+    chain_speculative_sampling_from_logits_triton,
     chain_speculative_sampling_triton,
 )
 from sglang.srt.speculative.dflash_info_v2 import DFlashDraftInputV2
@@ -91,11 +92,28 @@ def _accept_sampling_core(
     bs = candidates.shape[0]
     device = candidates.device
     if not sampling_info.need_top_k_sampling and not sampling_info.need_top_p_sampling:
-        target_probs = SoftmaxTemp.execute(
-            logits=target_logits,
-            temperatures=sampling_info.temperatures,
-            rows_per_request=verify_num_draft_tokens,
-        ).view(bs, verify_num_draft_tokens, -1)
+        if (
+            target_logits.dtype in (torch.float16, torch.bfloat16)
+            and draft_probs.dtype == target_logits.dtype
+        ):
+            # LatentSpec samples q in model dtype, matching SGLang's normal
+            # sampler.  Build p the same way: this is both numerically more
+            # consistent than an FP32-only verify path and halves the large
+            # [batch, verify_rows, vocab] tensor read by rejection sampling.
+            temperatures = sampling_info.temperatures.reshape(bs).to(
+                device=device, dtype=target_logits.dtype
+            )
+            target_probs = torch.softmax(
+                target_logits.view(bs, verify_num_draft_tokens, -1)
+                / temperatures[:, None, None],
+                dim=-1,
+            )
+        else:
+            target_probs = SoftmaxTemp.execute(
+                logits=target_logits,
+                temperatures=sampling_info.temperatures,
+                rows_per_request=verify_num_draft_tokens,
+            ).view(bs, verify_num_draft_tokens, -1)
     else:
         target_probs = build_dflash_verify_target_probs(
             next_token_logits=target_logits,
@@ -405,6 +423,148 @@ def softmax_temp_flashinfer(
     ).contiguous()
     logits_2d = logits.to(torch.float32).contiguous()
     return _flashinfer_softmax(logits=logits_2d, temperature=temp_per_row)
+
+
+@triton.jit
+def _logsumexp_temp_kernel(
+    logits_ptr,
+    temperatures_ptr,
+    output_ptr,
+    row_stride,
+    VOCAB_SIZE: tl.constexpr,
+    ROWS_PER_REQUEST: tl.constexpr,
+    BLOCK_V: tl.constexpr,
+):
+    row = tl.program_id(0)
+    temperature = tl.load(temperatures_ptr + row // ROWS_PER_REQUEST).to(
+        tl.float32
+    )
+    row_max = -float("inf")
+    for vocab_start in range(0, VOCAB_SIZE, BLOCK_V):
+        offsets = vocab_start + tl.arange(0, BLOCK_V)
+        values = tl.load(
+            logits_ptr + row * row_stride + offsets,
+            mask=offsets < VOCAB_SIZE,
+            other=-float("inf"),
+        ).to(tl.float32) / temperature
+        row_max = tl.maximum(row_max, tl.max(values, axis=0))
+
+    exp_sum = 0.0
+    for vocab_start in range(0, VOCAB_SIZE, BLOCK_V):
+        offsets = vocab_start + tl.arange(0, BLOCK_V)
+        mask = offsets < VOCAB_SIZE
+        values = tl.load(
+            logits_ptr + row * row_stride + offsets,
+            mask=mask,
+            other=-float("inf"),
+        ).to(tl.float32) / temperature
+        exp_sum += tl.sum(tl.where(mask, tl.exp(values - row_max), 0.0))
+    tl.store(output_ptr + row, row_max + tl.log(exp_sum))
+
+
+def logsumexp_temp_triton(
+    *,
+    logits: torch.Tensor,
+    temperatures: torch.Tensor,
+    rows_per_request: int,
+) -> torch.Tensor:
+    num_rows, vocab_size = logits.shape
+    batch_size = num_rows // rows_per_request
+    temperatures = temperatures.reshape(batch_size).to(
+        device=logits.device, dtype=torch.float32
+    ).contiguous()
+    output = torch.empty(num_rows, dtype=torch.float32, device=logits.device)
+    _logsumexp_temp_kernel[(num_rows,)](
+        logits,
+        temperatures,
+        output,
+        logits.stride(0),
+        VOCAB_SIZE=vocab_size,
+        ROWS_PER_REQUEST=rows_per_request,
+        BLOCK_V=4096,
+        num_warps=8,
+    )
+    return output.view(batch_size, rows_per_request)
+
+
+def accept_sampling_from_logits(
+    *,
+    candidates: torch.Tensor,
+    target_logits: torch.Tensor,
+    draft_logits: torch.Tensor,
+    draft_log_norm: torch.Tensor,
+    sampling_info,
+    draft_input: DFlashDraftInputV2,
+    gamma: int,
+    verify_num_draft_tokens: int,
+    cutoff_verify_lens: Optional[torch.Tensor] = None,
+) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """LatentSpec rejection sampling without dense target/draft probabilities."""
+    del draft_input
+    batch_size = candidates.shape[0]
+    vocab_size = target_logits.shape[-1]
+    target_logits_3d = target_logits.view(
+        batch_size, verify_num_draft_tokens, vocab_size
+    )
+    if tuple(draft_logits.shape) != (batch_size, gamma, vocab_size):
+        raise ValueError(
+            "draft_logits shape mismatch for logits rejection: "
+            f"got {tuple(draft_logits.shape)}, expected "
+            f"{(batch_size, gamma, vocab_size)}"
+        )
+    temperatures = sampling_info.temperatures.reshape(batch_size).to(
+        device=target_logits.device, dtype=torch.float32
+    ).contiguous()
+    target_log_norm = logsumexp_temp_triton(
+        logits=target_logits,
+        temperatures=temperatures,
+        rows_per_request=verify_num_draft_tokens,
+    )
+    (
+        retrieve_index,
+        _,
+        _,
+        predicts,
+        accept_index,
+        accept_token_num,
+    ) = _get_or_create_chain_verify_buffers(
+        bs=batch_size,
+        draft_token_num=verify_num_draft_tokens,
+        device=target_logits.device,
+    )
+    uniform_samples = torch.rand(
+        (batch_size, gamma), dtype=torch.float32, device=target_logits.device
+    )
+    uniform_samples_final = torch.rand(
+        (batch_size,), dtype=torch.float32, device=target_logits.device
+    )
+    chain_speculative_sampling_from_logits_triton(
+        predicts=predicts,
+        accept_index=accept_index,
+        accept_token_num=accept_token_num,
+        candidates=candidates,
+        retrive_index=retrieve_index,
+        uniform_samples=uniform_samples,
+        uniform_samples_for_final_sampling=uniform_samples_final,
+        target_logits=target_logits_3d,
+        draft_logits=draft_logits,
+        target_log_norm=target_log_norm,
+        draft_log_norm=draft_log_norm,
+        temperatures=temperatures,
+    )
+    correct_len = accept_token_num
+    if cutoff_verify_lens is not None:
+        correct_len, cap_trim_lens = CapCorrectLen.execute(
+            correct_len=correct_len, verify_lens=cutoff_verify_lens
+        )
+    else:
+        cap_trim_lens = torch.zeros_like(correct_len)
+    bonus = gather_two_level_bonus_triton(
+        accept_index=accept_index,
+        predicts=predicts,
+        correct_len=correct_len,
+    )
+    return correct_len, bonus, cap_trim_lens
 
 
 class MixedAcceptSelectResult(msgspec.Struct):

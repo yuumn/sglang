@@ -195,11 +195,6 @@ def _handle_dflash(server_args: ServerArgs) -> None:
                 "--speculative-dflash-prediction-hidden-start must be 0 or 1, "
                 f"got {prediction_hidden_start_override}."
             )
-    elif cfg.speculative_algorithm == "LATENTSPEC":
-        # Qwen3MySpecModel prepends an unused anchor row to its proposal hidden
-        # states.  The seven trained proposal rows therefore live at indices
-        # 1..7 in the shared DFlash sampler layout.
-        prediction_hidden_start_override = 1
 
     if not (cfg.device.startswith("cuda") or cfg.device == "npu"):
         raise ValueError(
@@ -290,6 +285,7 @@ def _handle_dflash(server_args: ServerArgs) -> None:
     if (
         prediction_hidden_start_override is None
         or cfg.speculative_num_draft_tokens is None
+        or cfg.speculative_algorithm == "LATENTSPEC"
     ):
         from sglang.srt.speculative.dflash_utils import parse_dflash_draft_config
 
@@ -306,6 +302,33 @@ def _handle_dflash(server_args: ServerArgs) -> None:
             draft_config = parse_dflash_draft_config(draft_hf_config=draft_hf_config)
         except Exception as e:
             draft_config_error = e
+
+    if cfg.speculative_algorithm == "LATENTSPEC":
+        if draft_config is None:
+            raise ValueError(
+                "LATENTSPEC requires reading num_latent_tokens from the draft "
+                "checkpoint config, but loading the config failed: "
+                f"{draft_config_error}"
+            )
+        draft_text_config = (
+            getattr(draft_hf_config, "text_config", None) or draft_hf_config
+        )
+        if isinstance(draft_text_config, dict):
+            num_latent_tokens = draft_text_config.get("num_latent_tokens")
+        else:
+            num_latent_tokens = getattr(draft_text_config, "num_latent_tokens", None)
+        if num_latent_tokens is None or int(num_latent_tokens) <= 0:
+            raise ValueError(
+                "LATENTSPEC draft checkpoint config must define a positive "
+                f"num_latent_tokens, got {num_latent_tokens!r}."
+            )
+        if prediction_hidden_start_override not in (None, 0):
+            raise ValueError(
+                "LATENTSPEC returns only its proposal hidden rows, so "
+                "--speculative-dflash-prediction-hidden-start must be 0, got "
+                f"{prediction_hidden_start_override}."
+            )
+        prediction_hidden_start_override = 0
 
     if prediction_hidden_start_override is None:
         if draft_config is not None:
@@ -607,6 +630,14 @@ def _resolve_dflash_draft_attention_backend(server_args: ServerArgs) -> None:
     fallback_backend = "triton" if get_platform().is_hip else "flashinfer"
 
     draft_backend = cfg.speculative_draft_attention_backend
+    if cfg.speculative_algorithm == "LATENTSPEC" and draft_backend != "triton":
+        if draft_backend is not None:
+            logger.warning(
+                "LATENTSPEC batched draft attention requires its two-stage "
+                "metadata; overriding draft attention backend %r with 'triton'.",
+                draft_backend,
+            )
+        draft_backend = "triton"
     if draft_backend is None:
 
         draft_backend, _ = attention_backends_of(resolved_view(server_args))

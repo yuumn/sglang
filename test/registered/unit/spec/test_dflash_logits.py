@@ -87,7 +87,7 @@ def test_dflash_prediction_layout_rejects_unsupported_start():
     ("algorithm", "is_draft_worker", "prediction_hidden_start", "expected_width"),
     [
         (SpeculativeAlgorithm.DFLASH, True, 0, 7),
-        (SpeculativeAlgorithm.LATENTSPEC, True, 1, 8),
+        (SpeculativeAlgorithm.LATENTSPEC, True, 0, 7),
         (SpeculativeAlgorithm.DFLASH, True, 1, 8),
         (SpeculativeAlgorithm.DFLASH, False, 0, 8),
         (SpeculativeAlgorithm.DSPARK, True, 0, 7),
@@ -128,6 +128,7 @@ def test_latentspec_resolves_proposal_width_to_anchor_padded_verify_width(
         lambda *args, **kwargs: {
             "architectures": ["Qwen3MySpecModel"],
             "block_size": 7,
+            "num_latent_tokens": 4,
             "num_hidden_layers": 3,
         },
     )
@@ -141,12 +142,13 @@ def test_latentspec_resolves_proposal_width_to_anchor_padded_verify_width(
     speculative_hook_module._handle_dflash(server_args)
     cfg = resolved_view(server_args)
 
-    assert cfg.speculative_dflash_prediction_hidden_start == 1
+    assert cfg.speculative_dflash_prediction_hidden_start == 0
     assert cfg.speculative_num_draft_tokens == 8
+    assert cfg.speculative_draft_attention_backend == "triton"
 
 
 def test_latentspec_temperature_sampling_matches_reference_evaluator():
-    """MySpec independently samples every proposal row and retains fp32 q."""
+    """MySpec samples every proposal row and retains the matching BF16 q."""
     logits = torch.tensor(
         [
             [[0.0, 1.0, 2.0], [2.0, -1.0, 0.5]],
@@ -168,9 +170,7 @@ def test_latentspec_temperature_sampling_matches_reference_evaluator():
     ).reshape(2, 2)
     expected_tokens = sampled.clone()
     expected_tokens[1] = logits[1].argmax(dim=-1)
-    reference_q = torch.softmax(
-        logits.float() / temperatures[:, None, None], dim=-1
-    )
+    reference_q = reference_sample_probs
     reference_q[1].zero_()
     reference_q[1].scatter_(-1, expected_tokens[1].unsqueeze(-1), 1.0)
 
@@ -184,7 +184,7 @@ def test_latentspec_temperature_sampling_matches_reference_evaluator():
 
     torch.testing.assert_close(actual_tokens, expected_tokens)
     torch.testing.assert_close(actual_q, reference_q)
-    assert actual_q.dtype == torch.float32
+    assert actual_q.dtype == torch.bfloat16
     torch.testing.assert_close(actual_q.sum(dim=-1), torch.ones(2, 2))
 
 

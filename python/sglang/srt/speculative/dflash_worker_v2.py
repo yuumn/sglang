@@ -15,6 +15,7 @@ from sglang.kernels.ops.speculative.dflash import (
 )
 from sglang.kernels.ops.speculative.dspark.dspark_accept import (
     accept_sampling,
+    accept_sampling_from_logits,
 )
 from sglang.srt.configs.hybrid_arch import mambaish_config
 from sglang.srt.distributed import get_tp_group
@@ -52,6 +53,7 @@ from sglang.srt.speculative.dflash_utils import (
     is_dense_head_weight,
     is_dflash_sampling_verify_available,
     parse_dflash_draft_config,
+    sample_latentspec_draft_logits_cuda,
     sample_latentspec_draft_tokens,
 )
 from sglang.srt.speculative.draft_worker_common import (
@@ -186,6 +188,86 @@ class _DflashDraftSampler:
         selected = self.selected_ids[:, :n]
         torch.gather(gathered_ids.view(self.tp_size, n), 0, best_rank, out=selected)
         self.out[:n].copy_(selected.view(-1))
+
+
+class _LatentSpecDraftSampler:
+    """Capture the dense LM head and exact temperature sampler with the draft.
+
+    The output tensors are allocated once at the largest captured batch size.  In
+    particular, the head GEMM writes directly into ``logits``; retaining the graph
+    result therefore does not add the full-vocabulary copy that made the previous
+    graph attempt slower than eager execution.
+    """
+
+    def __init__(
+        self,
+        *,
+        weight: torch.Tensor,
+        block_size: int,
+        vocab_size: int,
+        max_bs: int,
+    ):
+        self.weight = weight[:vocab_size]
+        self.block_size = int(block_size)
+        self.vocab_size = int(vocab_size)
+        self.max_bs = int(max_bs)
+        max_rows = self.max_bs * self.block_size
+        device = weight.device
+        num_blocks = math.ceil(self.vocab_size / 4096)
+        self.logits = torch.empty(
+            (max_rows, self.vocab_size), dtype=weight.dtype, device=device
+        )
+        self.temperatures = torch.ones(
+            (self.max_bs,), dtype=torch.float32, device=device
+        )
+        self.sample_buffers = {
+            "block_max": torch.empty(
+                (max_rows, num_blocks), dtype=torch.float32, device=device
+            ),
+            "block_sum": torch.empty(
+                (max_rows, num_blocks), dtype=torch.float32, device=device
+            ),
+            "uniforms": torch.empty(
+                (max_rows,), dtype=torch.float32, device=device
+            ),
+            "tokens": torch.empty((max_rows,), dtype=torch.int64, device=device),
+            "log_norm": torch.empty(
+                (max_rows,), dtype=torch.float32, device=device
+            ),
+        }
+        self.out = self.sample_buffers["tokens"]
+        self.log_norm = self.sample_buffers["log_norm"]
+
+    def stage_sampling_params(self, *, bs: int, sampling_info) -> bool:
+        if sampling_info is None:
+            return False
+        self.temperatures[:bs].copy_(
+            sampling_info.temperatures.view(-1)[:bs].to(torch.float32)
+        )
+        self.temperatures[:bs].clamp_(min=1e-5)
+        return not (
+            bool(sampling_info.is_any_greedy)
+            or bool(sampling_info.need_top_k_sampling)
+            or bool(sampling_info.need_top_p_sampling)
+        )
+
+    def __call__(self, hidden_states, input_ids=None):
+        del input_ids
+        bs = hidden_states.shape[0] // self.block_size
+        flat_hidden = hidden_states.reshape(-1, hidden_states.shape[-1])
+        if flat_hidden.dtype != self.weight.dtype:
+            flat_hidden = flat_hidden.to(self.weight.dtype)
+        num_rows = flat_hidden.shape[0]
+        # ``out=`` is essential here: every captured shape writes to the same
+        # externally visible storage, so replay needs no logits copy.
+        torch.mm(flat_hidden, self.weight.T, out=self.logits[:num_rows])
+        sample_latentspec_draft_logits_cuda(
+            draft_logits=self.logits[:num_rows].view(
+                bs, self.block_size, self.vocab_size
+            ),
+            temperatures=self.temperatures[:bs],
+            buffers=self.sample_buffers,
+        )
 
 
 def _commit_accept(candidates, accept_len, bonus_tokens):
@@ -607,6 +689,35 @@ class DFlashWorkerV2(BaseSpecWorker):
         if lm_head is None:
             return _eager("no target lm_head")
 
+        if self.is_latentspec:
+            if get_tp_group().world_size != 1:
+                return _eager("LATENTSPEC tp>1")
+            weight = getattr(lm_head, "weight", None)
+            if not is_dense_head_weight(weight):
+                return _eager("LATENTSPEC quantized lm_head")
+            vocab_size = int(self.model_runner.model_config.vocab_size)
+            if hasattr(lm_head, "shard_indices"):
+                shard = lm_head.shard_indices
+                if (
+                    int(shard.org_vocab_start_index) != 0
+                    or int(shard.num_org_elements) != vocab_size
+                    or int(shard.num_added_elements) != 0
+                ):
+                    return _eager("LATENTSPEC non-contiguous vocabulary shard")
+            elif int(weight.shape[0]) < vocab_size:
+                return _eager("LATENTSPEC undersized lm_head")
+            if self.ps.tp_rank == 0:
+                logger.info(
+                    "LATENTSPEC exact head and temperature sampler folded into "
+                    "the draft cuda graph without a logits copy."
+                )
+            return _LatentSpecDraftSampler(
+                weight=weight,
+                block_size=self.num_draft_predictions,
+                vocab_size=vocab_size,
+                max_bs=max(get_exec().graph.cuda_graph_config.decode.bs),
+            )
+
         if self.selector is not None:
             # compute_candidates needs the target lm_head attached before capture.
             # A gate-admitted quantized head is capture-safe: the target's own
@@ -686,9 +797,22 @@ class DFlashWorkerV2(BaseSpecWorker):
 
             for layer_idx, layer in enumerate(layers):
                 attn = layer.self_attn
-                eligible, reason = can_dflash_use_fused_qkv_proj(attn.qkv_proj)
-                if not eligible:
-                    fused_disable_reason = f"{reason}: layer={layer_idx}"
+                context_kv_weight = getattr(attn, "context_kv_weight", None)
+                if context_kv_weight is None:
+                    eligible, reason = can_dflash_use_fused_qkv_proj(attn.qkv_proj)
+                    if not eligible:
+                        fused_disable_reason = f"{reason}: layer={layer_idx}"
+                        break
+                elif (
+                    not isinstance(context_kv_weight, torch.Tensor)
+                    or context_kv_weight.ndim != 2
+                    or context_kv_weight.dtype
+                    not in (torch.float16, torch.bfloat16, torch.float32)
+                ):
+                    fused_disable_reason = (
+                        "unsupported dedicated context KV weight: "
+                        f"layer={layer_idx}"
+                    )
                     break
 
                 # Keep semantics aligned with set_kv_buffer scaling behavior.
@@ -1123,7 +1247,12 @@ class DFlashWorkerV2(BaseSpecWorker):
         q_rows: torch.Tensor,
         sampling_info,
         draft_input,
-    ) -> Tuple[torch.Tensor, torch.Tensor]:
+    ) -> Tuple[
+        torch.Tensor,
+        Optional[torch.Tensor],
+        Optional[torch.Tensor],
+        Optional[torch.Tensor],
+    ]:
         """Scatter the selector's sparse q into a dense one for DSpark's kernel."""
         bs, block = candidates.shape
         gamma = block - 1
@@ -1472,12 +1601,25 @@ class DFlashWorkerV2(BaseSpecWorker):
         greedy_mask = resolve_greedy_mask(
             bs=bs, sampling_info=sampling_info, device=draft_logits.device
         )
-        return sample_latentspec_draft_tokens(
+        if (
+            not bool(sampling_info.is_any_greedy)
+            and not bool(sampling_info.need_top_k_sampling)
+            and not bool(sampling_info.need_top_p_sampling)
+            and draft_logits.is_cuda
+        ):
+            sampled_tokens, draft_log_norm = sample_latentspec_draft_logits_cuda(
+                draft_logits=draft_logits,
+                temperatures=temperatures,
+            )
+            return sampled_tokens, None, draft_logits, draft_log_norm
+
+        sampled_tokens, draft_probs = sample_latentspec_draft_tokens(
             draft_logits=draft_logits,
             temperatures=temperatures,
             greedy_mask=greedy_mask,
             is_any_greedy=bool(sampling_info.is_any_greedy),
         )
+        return sampled_tokens, draft_probs, None, None
 
     def _append_target_hidden_to_draft_kv_by_loc(
         self,
@@ -1818,10 +1960,34 @@ class DFlashWorkerV2(BaseSpecWorker):
         prefix_lens: torch.Tensor,
         bs: int,
         draft_probs: Optional[torch.Tensor] = None,
+        draft_logits: Optional[torch.Tensor] = None,
+        draft_log_norm: Optional[torch.Tensor] = None,
     ):
         new_seq_lens = None
         target_predict = None
-        if draft_probs is not None:
+        if draft_logits is not None:
+            gamma = self.verify_num_draft_tokens - 1
+            if draft_log_norm is None:
+                raise RuntimeError(
+                    "LATENTSPEC logits rejection requires draft log normalizers."
+                )
+            accept_len, bonus, _ = accept_sampling_from_logits(
+                candidates=candidates,
+                target_logits=next_token_logits,
+                draft_logits=draft_logits,
+                draft_log_norm=draft_log_norm,
+                sampling_info=sampling_info,
+                draft_input=draft_input,
+                gamma=gamma,
+                verify_num_draft_tokens=self.verify_num_draft_tokens,
+                cutoff_verify_lens=None,
+            )
+            self._tp_sync.sync(SpecTpSyncSite.DFLASH_ACCEPT_SAMPLE, accept_len)
+            self._tp_sync.sync(SpecTpSyncSite.DFLASH_ACCEPT_SAMPLE, bonus)
+            accept_len = accept_len.to(torch.int32)
+            bonus = bonus.to(torch.int64)
+            out_tokens, commit_lens = _commit_accept(candidates, accept_len, bonus)
+        elif draft_probs is not None:
             gamma = self.verify_num_draft_tokens - 1
             expected_shape = (
                 bs,
@@ -2253,29 +2419,51 @@ class DFlashWorkerV2(BaseSpecWorker):
             seq_lens_cpu=seq_lens_cpu,
             positions=draft_positions,
             input_embeds=input_embeds,
-            spec_algorithm=SpeculativeAlgorithm.DFLASH,
+            spec_algorithm=(
+                SpeculativeAlgorithm.LATENTSPEC
+                if self.is_latentspec
+                else SpeculativeAlgorithm.DFLASH
+            ),
             spec_info=self._draft_block_spec_info,
             capture_hidden_mode=CaptureHiddenMode.NULL,
         )
 
         draft_probs = None
+        draft_logits = None
+        draft_log_norm = None
+        sampler_fold_eligible = True
         if self.selector is not None:
             self._selector_sample = None
-            if self._draft_sampler is not None:
-                # Consumed by the in-graph sample; must be staged before the replay.
-                self._draft_sampler.stage_sampling_params(
-                    bs=bs, sampling_info=batch.sampling_info
-                )
+        if self._draft_sampler is not None and hasattr(
+            self._draft_sampler, "stage_sampling_params"
+        ):
+            # Consumed by the in-graph sample; must be staged before replay.
+            stage_result = self._draft_sampler.stage_sampling_params(
+                bs=bs, sampling_info=batch.sampling_info
+            )
+            if stage_result is False:
+                sampler_fold_eligible = False
 
         with torch.inference_mode():
             draft_out = self.draft_model_runner.forward(forward_batch)
         draft_logits_output = draft_out.logits_output
 
-        folded = self._draft_sampler is not None and draft_out.can_run_graph
+        folded = (
+            self._draft_sampler is not None
+            and draft_out.can_run_graph
+            and sampler_fold_eligible
+        )
         if folded:
             draft_next = self._draft_sampler.out[
                 : bs * self.num_draft_predictions
             ].view(bs, self.num_draft_predictions)
+            if self.is_latentspec:
+                draft_logits = self._draft_sampler.logits[
+                    : bs * self.num_draft_predictions
+                ].view(bs, self.num_draft_predictions, -1)
+                draft_log_norm = self._draft_sampler.log_norm[
+                    : bs * self.num_draft_predictions
+                ].view(bs, self.num_draft_predictions)
             if self.selector is not None and not _is_all_greedy(batch.sampling_info):
                 self._selector_sample = (
                     self._draft_sampler.candidate_out[:bs],
@@ -2298,7 +2486,12 @@ class DFlashWorkerV2(BaseSpecWorker):
             end = start + self.num_draft_predictions
             prediction_hidden = draft_hidden[:, start:end, :]
             if self.is_latentspec and not _is_all_greedy(batch.sampling_info):
-                draft_next, draft_probs = self._sample_latentspec_draft_block(
+                (
+                    draft_next,
+                    draft_probs,
+                    draft_logits,
+                    draft_log_norm,
+                ) = self._sample_latentspec_draft_block(
                     hidden_states=prediction_hidden,
                     lm_head=lm_head,
                     bs=bs,
@@ -2403,6 +2596,8 @@ class DFlashWorkerV2(BaseSpecWorker):
             prefix_lens=prefix_lens,
             bs=bs,
             draft_probs=draft_probs,
+            draft_logits=draft_logits,
+            draft_log_norm=draft_log_norm,
         )
 
         if SIMULATE_ACC_LEN > 0:

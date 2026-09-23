@@ -212,6 +212,13 @@ class TritonAttnBackend(AttentionBackend):
         self.kv_index_translator = model_runner.kv_index_translator
         self.kv_read_tables = None
         self.num_draft_tokens = get_spec().speculative_num_draft_tokens
+        if (
+            self.num_draft_tokens is not None
+            and model_runner.spec_algorithm.is_speculative()
+        ):
+            self.num_draft_tokens = model_runner.decode_num_tokens_per_req(
+                num_draft_tokens=int(self.num_draft_tokens)
+            )
         self.speculative_num_steps = get_spec().speculative_num_steps
         self.topk = get_spec().speculative_eagle_topk or 0
         # Split-KV verify is bit-equivalent only for a pure-causal chain (topk==1)
@@ -361,6 +368,36 @@ class TritonAttnBackend(AttentionBackend):
         self._verify_mask = None
         # Tree-mask scratch is fetched from the target backend only.
         self.is_draft_runner = model_runner.is_draft_worker
+        self.latentspec_stage_widths = None
+        self.latentspec_stage_metadata = None
+        if self.is_draft_runner and model_runner.spec_algorithm.is_latentspec():
+            hf_config = model_runner.model_config.hf_config
+            text_config = getattr(hf_config, "text_config", None) or hf_config
+            if isinstance(text_config, dict):
+                latent_width = text_config.get("num_latent_tokens")
+                proposal_width = text_config.get("block_size")
+            else:
+                latent_width = getattr(text_config, "num_latent_tokens", None)
+                proposal_width = getattr(text_config, "block_size", None)
+            if latent_width is None or proposal_width is None:
+                raise ValueError(
+                    "LATENTSPEC Triton attention requires num_latent_tokens "
+                    "and block_size in the draft checkpoint config."
+                )
+            if self.dcp_size != 1 or self.use_sliding_window_kv_pool:
+                raise ValueError(
+                    "LATENTSPEC two-stage Triton attention currently requires "
+                    "DCP=1 and a non-sliding KV pool."
+                )
+            if self.kv_index_translator.is_translating:
+                raise ValueError(
+                    "LATENTSPEC two-stage Triton attention does not yet support "
+                    "a translated/unified KV pool."
+                )
+            self.latentspec_stage_widths = (
+                int(latent_width),
+                int(proposal_width),
+            )
 
         # Auto-detect BLOCK_M that extend_attention kernel will use for this model.
         # This is used by the scheduler's tile-budget admission logic to match
@@ -463,8 +500,13 @@ class TritonAttnBackend(AttentionBackend):
         seq_lens: torch.Tensor,
         index_table,
         kv_indices: torch.Tensor,
+        kv_indptr: Optional[torch.Tensor] = None,
     ) -> torch.Tensor:
-        kv_indptr = self.kv_indptr[: bs + 1]
+        kv_indptr = (
+            self.kv_indptr[: bs + 1]
+            if kv_indptr is None
+            else kv_indptr[: bs + 1]
+        )
         kv_indptr[1:] = torch.cumsum(seq_lens, dim=0)
         create_flashinfer_kv_indices_triton[(bs,)](
             index_table.ids,
@@ -477,6 +519,156 @@ class TritonAttnBackend(AttentionBackend):
             ENTRY_PAGE_SIZE=index_table.entry_page_size,
         )
         return kv_indptr
+
+    def _build_latentspec_stage_metadata(
+        self,
+        *,
+        forward_batch: ForwardBatch,
+        index_table,
+        latent_kv_indptr: torch.Tensor,
+        latent_kv_indices: torch.Tensor,
+        latent_qo_indptr: torch.Tensor,
+        proposal_kv_indptr: torch.Tensor,
+        proposal_kv_indices: torch.Tensor,
+        proposal_qo_indptr: torch.Tensor,
+    ) -> dict[str, ForwardMetadata]:
+        assert self.latentspec_stage_widths is not None
+        latent_width, proposal_width = self.latentspec_stage_widths
+        bs = int(forward_batch.batch_size)
+        prefix_lens = forward_batch.seq_lens[:bs]
+        proposal_prefix_lens = prefix_lens + latent_width
+
+        latent_qo_indptr[: bs + 1] = torch.arange(
+            0,
+            (bs + 1) * latent_width,
+            step=latent_width,
+            dtype=latent_qo_indptr.dtype,
+            device=self.device,
+        )
+        proposal_qo_indptr[: bs + 1] = torch.arange(
+            0,
+            (bs + 1) * proposal_width,
+            step=proposal_width,
+            dtype=proposal_qo_indptr.dtype,
+            device=self.device,
+        )
+        latent_kv_indptr = self._fill_kv_indptr_and_indices(
+            bs,
+            prefix_lens,
+            index_table,
+            latent_kv_indices,
+            kv_indptr=latent_kv_indptr,
+        )
+        proposal_kv_indptr = self._fill_kv_indptr_and_indices(
+            bs,
+            proposal_prefix_lens,
+            index_table,
+            proposal_kv_indices,
+            kv_indptr=proposal_kv_indptr,
+        )
+
+        def metadata(width, kv_indptr, kv_indices, qo_indptr):
+            return ForwardMetadata(
+                attn_logits=None,
+                attn_lse=None,
+                max_extend_len=width,
+                num_kv_splits=None,
+                kv_indptr=kv_indptr[: bs + 1],
+                kv_indices=kv_indices,
+                qo_indptr=qo_indptr[: bs + 1],
+                custom_mask=None,
+                mask_indptr=None,
+                window_kv_indptr=None,
+                window_kv_indices=None,
+                window_num_kv_splits=None,
+                window_kv_offsets=None,
+            )
+
+        return {
+            "latent": metadata(
+                latent_width,
+                latent_kv_indptr,
+                latent_kv_indices,
+                latent_qo_indptr,
+            ),
+            "proposal": metadata(
+                proposal_width,
+                proposal_kv_indptr,
+                proposal_kv_indices,
+                proposal_qo_indptr,
+            ),
+        }
+
+    def _init_latentspec_eager_metadata(
+        self, forward_batch: ForwardBatch
+    ) -> None:
+        if self.latentspec_stage_widths is None:
+            return
+        latent_width, _ = self.latentspec_stage_widths
+        bs = int(forward_batch.batch_size)
+        # seq_lens_sum is normally a conservative host planning bound. Add the
+        # latent prefix explicitly so this also remains safe for exact bounds.
+        base_capacity = forward_batch.seq_lens_sum
+        if base_capacity is None:
+            base_capacity = bs * self.max_context_len
+        latent_capacity = max(int(base_capacity), 1)
+        proposal_capacity = max(int(base_capacity) + bs * latent_width, 1)
+        index_table = self.kv_index_translator.index_table_for_batch(forward_batch)
+        self.latentspec_stage_metadata = self._build_latentspec_stage_metadata(
+            forward_batch=forward_batch,
+            index_table=index_table,
+            latent_kv_indptr=torch.zeros(
+                (bs + 1,), dtype=torch.int32, device=self.device
+            ),
+            latent_kv_indices=torch.empty(
+                (latent_capacity,), dtype=torch.int64, device=self.device
+            ),
+            latent_qo_indptr=torch.empty(
+                (bs + 1,), dtype=torch.int32, device=self.device
+            ),
+            proposal_kv_indptr=torch.zeros(
+                (bs + 1,), dtype=torch.int32, device=self.device
+            ),
+            proposal_kv_indices=torch.empty(
+                (proposal_capacity,), dtype=torch.int64, device=self.device
+            ),
+            proposal_qo_indptr=torch.empty(
+                (bs + 1,), dtype=torch.int32, device=self.device
+            ),
+        )
+
+    def _update_latentspec_cuda_graph_metadata(
+        self, forward_batch: ForwardBatch, *, in_capture: bool
+    ) -> None:
+        if self.latentspec_stage_widths is None:
+            return
+        index_table = self.kv_index_translator.build_index_table(
+            req_pool_indices=forward_batch.req_pool_indices,
+            seq_lens=forward_batch.seq_lens,
+            into=self.kv_read_tables,
+        )
+        metadata = self._build_latentspec_stage_metadata(
+            forward_batch=forward_batch,
+            index_table=index_table,
+            latent_kv_indptr=self.latentspec_cuda_graph_kv_indptr[0],
+            latent_kv_indices=self.latentspec_cuda_graph_kv_indices[0],
+            latent_qo_indptr=self.latentspec_cuda_graph_qo_indptr[0],
+            proposal_kv_indptr=self.latentspec_cuda_graph_kv_indptr[1],
+            proposal_kv_indices=self.latentspec_cuda_graph_kv_indices[1],
+            proposal_qo_indptr=self.latentspec_cuda_graph_qo_indptr[1],
+        )
+        if in_capture:
+            self.latentspec_stage_metadata = metadata
+
+    def set_latentspec_stage(self, stage: str) -> None:
+        if self.latentspec_stage_metadata is None:
+            raise RuntimeError(
+                "LATENTSPEC stage metadata was not initialized before model forward."
+            )
+        try:
+            self.forward_metadata = self.latentspec_stage_metadata[stage]
+        except KeyError as e:
+            raise ValueError(f"Unknown LATENTSPEC stage: {stage!r}") from e
 
     def _update_decode_kv_buffers(
         self,
@@ -694,6 +886,13 @@ class TritonAttnBackend(AttentionBackend):
                 swa_out_cache_loc,
                 out_cache_loc_full_physical,
             )
+            if (
+                self.latentspec_stage_widths is not None
+                and forward_mode.is_target_verify()
+            ):
+                self._update_latentspec_cuda_graph_metadata(
+                    forward_batch, in_capture=True
+                )
         else:
             self._apply_cuda_graph_metadata(
                 bs=bs,
@@ -705,6 +904,13 @@ class TritonAttnBackend(AttentionBackend):
             # Metadata view is reused from capture; just refill the buffers.
             self._fill_cuda_graph_write_locs(forward_batch, bs)
             self._fill_cuda_graph_swa_out_cache_loc(forward_batch)
+            if (
+                self.latentspec_stage_widths is not None
+                and forward_mode.is_target_verify()
+            ):
+                self._update_latentspec_cuda_graph_metadata(
+                    forward_batch, in_capture=False
+                )
 
     def _fill_cuda_graph_swa_out_cache_loc(
         self, forward_batch: ForwardBatch, in_capture: bool = False
@@ -1016,6 +1222,11 @@ class TritonAttnBackend(AttentionBackend):
             lean_Op=lean_Op,
             lean_locks=lean_locks,
         )
+        if (
+            self.latentspec_stage_widths is not None
+            and forward_batch.forward_mode.is_target_verify()
+        ):
+            self._init_latentspec_eager_metadata(forward_batch)
 
     def init_cuda_graph_state(
         self,
@@ -1086,6 +1297,37 @@ class TritonAttnBackend(AttentionBackend):
             )
         else:
             self.cuda_graph_kv_indices = kv_indices_buf
+
+        if self.latentspec_stage_widths is not None:
+            latent_width, _ = self.latentspec_stage_widths
+            self.latentspec_cuda_graph_kv_indptr = (
+                torch.zeros(
+                    (max_bs + 1,), dtype=torch.int32, device=self.device
+                ),
+                torch.zeros(
+                    (max_bs + 1,), dtype=torch.int32, device=self.device
+                ),
+            )
+            self.latentspec_cuda_graph_qo_indptr = (
+                torch.zeros(
+                    (max_bs + 1,), dtype=torch.int32, device=self.device
+                ),
+                torch.zeros(
+                    (max_bs + 1,), dtype=torch.int32, device=self.device
+                ),
+            )
+            self.latentspec_cuda_graph_kv_indices = (
+                torch.zeros(
+                    (max_bs * self.max_context_len,),
+                    dtype=torch.int64,
+                    device=self.device,
+                ),
+                torch.zeros(
+                    (max_bs * (self.max_context_len + latent_width),),
+                    dtype=torch.int64,
+                    device=self.device,
+                ),
+            )
 
         # Layout is draft * (seq_len + draft) per request (seq_mask_len cumsum
         # below) -- the same bound the shared sizing covers. Read as uint8.
@@ -1505,6 +1747,14 @@ class TritonAttnBackend(AttentionBackend):
         ):
             return o
 
+        # The generic Hopper extend tile has BLOCK_M=128. LatentSpec has fixed
+        # four- and seven-query stages, so an eight-row/two-warp tile avoids
+        # computing more than 16x the trained stage width and sharply reduces
+        # register pressure while preserving the same attention computation.
+        latentspec_short_extend = (
+            self.latentspec_stage_widths is not None
+            and self.forward_metadata.max_extend_len <= 8
+        )
         self.extend_attention_fwd(
             q.view(-1, layer.tp_q_head_num, layer.qk_head_dim),
             k.contiguous(),
@@ -1531,6 +1781,8 @@ class TritonAttnBackend(AttentionBackend):
             score_mod=score_mod,
             aux_tensors=aux_tensors,
             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
+            block_m_override=8 if latentspec_short_extend else None,
+            num_warps_override=2 if latentspec_short_extend else None,
         )
         return o
 

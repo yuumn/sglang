@@ -27,6 +27,12 @@ logger = logging.getLogger(__name__)
 
 _DFLASH_SAMPLING_VERIFY_AVAILABLE = False
 _DFLASH_CHAIN_VERIFY_BUFFERS: dict[tuple[Optional[int], int], dict[str, Any]] = {}
+_LATENTSPEC_CATEGORICAL_BUFFERS: dict[
+    tuple[Optional[int], int, int], dict[str, torch.Tensor]
+] = {}
+_LATENTSPEC_LOGIT_SAMPLE_BUFFERS: dict[
+    tuple[Optional[int], int, int], dict[str, torch.Tensor]
+] = {}
 _DFLASH_VERIFY_SKIP_CUSTOM_MASK_BACKENDS = frozenset(
     {
         "FlashInferAttnBackend",
@@ -52,6 +58,7 @@ if is_cuda() or is_musa():
         top_k_renorm_prob = None
         top_p_renorm_prob = None
         tree_speculative_sampling_target_only = None
+
 elif is_hip():
     from sglang.kernels.ops.sampling.renorm_triton import (
         top_k_renorm_probs_triton as top_k_renorm_prob,
@@ -65,7 +72,6 @@ else:
     top_k_renorm_prob = None
     top_p_renorm_prob = None
     tree_speculative_sampling_target_only = None
-
 
 def is_dflash_sampling_verify_available() -> bool:
     return _DFLASH_SAMPLING_VERIFY_AVAILABLE
@@ -789,6 +795,356 @@ def is_dense_head_weight(weight: Any) -> bool:
     return weight is not None and weight.dtype in _DENSE_HEAD_DTYPES
 
 
+@triton.jit
+def _latentspec_categorical_block_sums_kernel(
+    probs_ptr,
+    block_sums_ptr,
+    row_stride,
+    VOCAB_SIZE: tl.constexpr,
+    N_BLOCKS: tl.constexpr,
+    BLOCK_SIZE: tl.constexpr,
+):
+    row = tl.program_id(0)
+    block = tl.program_id(1)
+    offsets = block * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    values = tl.load(
+        probs_ptr + row * row_stride + offsets,
+        mask=offsets < VOCAB_SIZE,
+        other=0.0,
+    ).to(tl.float32)
+    tl.store(
+        block_sums_ptr + row * N_BLOCKS + block,
+        tl.sum(values, axis=0),
+    )
+
+
+@triton.jit
+def _latentspec_categorical_select_kernel(
+    probs_ptr,
+    block_sums_ptr,
+    uniforms_ptr,
+    output_ptr,
+    row_stride,
+    VOCAB_SIZE: tl.constexpr,
+    N_BLOCKS: tl.constexpr,
+    N_BLOCK_LANES: tl.constexpr,
+    BLOCK_SIZE: tl.constexpr,
+):
+    row = tl.program_id(0)
+    block_ids = tl.arange(0, N_BLOCK_LANES)
+    valid_blocks = block_ids < N_BLOCKS
+    block_values = tl.load(
+        block_sums_ptr + row * N_BLOCKS + block_ids,
+        mask=valid_blocks,
+        other=0.0,
+    )
+    total = tl.sum(block_values, axis=0)
+    target = tl.load(uniforms_ptr + row).to(tl.float32) * total
+    block_prefix = tl.cumsum(block_values, axis=0)
+    # Inverse CDF: count all prefixes that have not crossed the sample yet.
+    selected_block = tl.sum(
+        ((block_prefix <= target) & valid_blocks).to(tl.int32), axis=0
+    )
+    selected_block = tl.minimum(selected_block, N_BLOCKS - 1)
+    prefix_before = tl.sum(
+        tl.where(block_ids < selected_block, block_values, 0.0), axis=0
+    )
+
+    local_ids = tl.arange(0, BLOCK_SIZE)
+    token_ids = selected_block * BLOCK_SIZE + local_ids
+    valid_tokens = token_ids < VOCAB_SIZE
+    token_values = tl.load(
+        probs_ptr + row * row_stride + token_ids,
+        mask=valid_tokens,
+        other=0.0,
+    ).to(tl.float32)
+    token_prefix = tl.cumsum(token_values, axis=0)
+    selected_local = tl.sum(
+        (
+            (token_prefix <= (target - prefix_before))
+            & valid_tokens
+        ).to(tl.int32),
+        axis=0,
+    )
+    selected_local = tl.minimum(
+        selected_local,
+        VOCAB_SIZE - 1 - selected_block * BLOCK_SIZE,
+    )
+    tl.store(output_ptr + row, selected_block * BLOCK_SIZE + selected_local)
+
+
+def _sample_latentspec_categorical_cuda(
+    probs: torch.Tensor,
+    *,
+    generator: Optional[torch.Generator],
+) -> torch.Tensor:
+    """Sample BF16/FP16 rows with a two-level CDF, without an FP32 copy.
+
+    ``torch.multinomial`` validates and prefix-scans the full matrix through
+    several kernels.  LatentSpec already owns the normalized q rows, so one
+    parallel block reduction followed by one per-row inverse CDF is sufficient.
+    The reduction and CDF accumulate in FP32; q itself remains compact.
+    """
+    if probs.ndim != 2 or not probs.is_contiguous():
+        raise ValueError("LatentSpec categorical probabilities must be contiguous 2D")
+    num_rows, vocab_size = probs.shape
+    # The 150K Qwen vocabulary is bandwidth-bound here.  A wider tile cuts the
+    # launch from ~149 blocks/row to ~38 while the per-row selector still fits
+    # comfortably on H100; measured kernel time drops by about 43%.
+    block_size = 4096
+    num_blocks = triton.cdiv(vocab_size, block_size)
+    key = (probs.device.index, int(num_rows), int(vocab_size))
+    buffers = _LATENTSPEC_CATEGORICAL_BUFFERS.get(key)
+    if buffers is None or buffers["block_sums"].device != probs.device:
+        buffers = {
+            "block_sums": torch.empty(
+                (num_rows, num_blocks), dtype=torch.float32, device=probs.device
+            ),
+            "uniforms": torch.empty(
+                (num_rows,), dtype=torch.float32, device=probs.device
+            ),
+            "tokens": torch.empty(
+                (num_rows,), dtype=torch.int64, device=probs.device
+            ),
+        }
+        _LATENTSPEC_CATEGORICAL_BUFFERS[key] = buffers
+
+    torch.rand(
+        (num_rows,),
+        dtype=torch.float32,
+        device=probs.device,
+        generator=generator,
+        out=buffers["uniforms"],
+    )
+    _latentspec_categorical_block_sums_kernel[(num_rows, num_blocks)](
+        probs,
+        buffers["block_sums"],
+        probs.stride(0),
+        VOCAB_SIZE=vocab_size,
+        N_BLOCKS=num_blocks,
+        BLOCK_SIZE=block_size,
+        num_warps=8,
+    )
+    _latentspec_categorical_select_kernel[(num_rows,)](
+        probs,
+        buffers["block_sums"],
+        buffers["uniforms"],
+        buffers["tokens"],
+        probs.stride(0),
+        VOCAB_SIZE=vocab_size,
+        N_BLOCKS=num_blocks,
+        N_BLOCK_LANES=triton.next_power_of_2(num_blocks),
+        BLOCK_SIZE=block_size,
+        num_warps=8,
+    )
+    return buffers["tokens"]
+
+
+@triton.jit
+def _latentspec_logit_block_stats_kernel(
+    logits_ptr,
+    temperatures_ptr,
+    block_max_ptr,
+    block_sum_ptr,
+    row_stride,
+    VOCAB_SIZE: tl.constexpr,
+    N_BLOCKS: tl.constexpr,
+    ROWS_PER_REQUEST: tl.constexpr,
+    BLOCK_SIZE: tl.constexpr,
+):
+    row = tl.program_id(0)
+    block = tl.program_id(1)
+    offsets = block * BLOCK_SIZE + tl.arange(0, BLOCK_SIZE)
+    temperature = tl.load(temperatures_ptr + row // ROWS_PER_REQUEST).to(
+        tl.float32
+    )
+    values = tl.load(
+        logits_ptr + row * row_stride + offsets,
+        mask=offsets < VOCAB_SIZE,
+        other=-float("inf"),
+    ).to(tl.float32) / temperature
+    block_max = tl.max(values, axis=0)
+    exponentials = tl.where(
+        offsets < VOCAB_SIZE, tl.exp(values - block_max), 0.0
+    )
+    stats_offset = row * N_BLOCKS + block
+    tl.store(block_max_ptr + stats_offset, block_max)
+    tl.store(block_sum_ptr + stats_offset, tl.sum(exponentials, axis=0))
+
+
+@triton.jit
+def _latentspec_logit_select_kernel(
+    logits_ptr,
+    temperatures_ptr,
+    block_max_ptr,
+    block_sum_ptr,
+    uniforms_ptr,
+    output_ptr,
+    log_norm_ptr,
+    row_stride,
+    VOCAB_SIZE: tl.constexpr,
+    N_BLOCKS: tl.constexpr,
+    N_BLOCK_LANES: tl.constexpr,
+    ROWS_PER_REQUEST: tl.constexpr,
+    BLOCK_SIZE: tl.constexpr,
+):
+    row = tl.program_id(0)
+    block_ids = tl.arange(0, N_BLOCK_LANES)
+    valid_blocks = block_ids < N_BLOCKS
+    maxima = tl.load(
+        block_max_ptr + row * N_BLOCKS + block_ids,
+        mask=valid_blocks,
+        other=-float("inf"),
+    )
+    sums = tl.load(
+        block_sum_ptr + row * N_BLOCKS + block_ids,
+        mask=valid_blocks,
+        other=0.0,
+    )
+    global_max = tl.max(maxima, axis=0)
+    block_weights = sums * tl.exp(maxima - global_max)
+    total = tl.sum(block_weights, axis=0)
+    target = tl.load(uniforms_ptr + row).to(tl.float32) * total
+    block_prefix = tl.cumsum(block_weights, axis=0)
+    selected_block = tl.sum(
+        ((block_prefix <= target) & valid_blocks).to(tl.int32), axis=0
+    )
+    selected_block = tl.minimum(selected_block, N_BLOCKS - 1)
+    prefix_before = tl.sum(
+        tl.where(block_ids < selected_block, block_weights, 0.0), axis=0
+    )
+    selected_max = tl.sum(
+        tl.where(block_ids == selected_block, maxima, 0.0), axis=0
+    )
+    selected_scale = tl.exp(selected_max - global_max)
+    local_target = (target - prefix_before) / selected_scale
+
+    local_ids = tl.arange(0, BLOCK_SIZE)
+    token_ids = selected_block * BLOCK_SIZE + local_ids
+    valid_tokens = token_ids < VOCAB_SIZE
+    temperature = tl.load(temperatures_ptr + row // ROWS_PER_REQUEST).to(
+        tl.float32
+    )
+    values = tl.load(
+        logits_ptr + row * row_stride + token_ids,
+        mask=valid_tokens,
+        other=-float("inf"),
+    ).to(tl.float32) / temperature
+    token_weights = tl.where(
+        valid_tokens, tl.exp(values - selected_max), 0.0
+    )
+    token_prefix = tl.cumsum(token_weights, axis=0)
+    selected_local = tl.sum(
+        ((token_prefix <= local_target) & valid_tokens).to(tl.int32), axis=0
+    )
+    selected_local = tl.minimum(
+        selected_local,
+        VOCAB_SIZE - 1 - selected_block * BLOCK_SIZE,
+    )
+    tl.store(output_ptr + row, selected_block * BLOCK_SIZE + selected_local)
+    tl.store(log_norm_ptr + row, global_max + tl.log(total))
+
+
+def sample_latentspec_draft_logits_cuda(
+    *,
+    draft_logits: torch.Tensor,
+    temperatures: torch.Tensor,
+    generator: Optional[torch.Generator] = None,
+    buffers: Optional[dict[str, torch.Tensor]] = None,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Sample directly from logits and retain only FP32 log normalizers.
+
+    Verification can reconstruct q from the original logits and these row
+    normalizers.  This avoids materializing a persistent
+    ``[batch, proposals, vocab]`` probability tensor altogether.
+    """
+    if draft_logits.ndim != 3 or not draft_logits.is_contiguous():
+        raise ValueError("LatentSpec draft logits must be contiguous 3D")
+    batch_size, rows_per_request, vocab_size = draft_logits.shape
+    flat_logits = draft_logits.view(-1, vocab_size)
+    num_rows = flat_logits.shape[0]
+    block_size = 4096
+    num_blocks = triton.cdiv(vocab_size, block_size)
+    key = (draft_logits.device.index, int(num_rows), int(vocab_size))
+    cached_buffers = buffers
+    if cached_buffers is None:
+        cached_buffers = _LATENTSPEC_LOGIT_SAMPLE_BUFFERS.get(key)
+    if (
+        cached_buffers is None
+        or cached_buffers["block_max"].device != draft_logits.device
+        or cached_buffers["block_max"].shape[0] < num_rows
+        or cached_buffers["block_max"].shape[1] != num_blocks
+    ):
+        buffers = {
+            "block_max": torch.empty(
+                (num_rows, num_blocks),
+                dtype=torch.float32,
+                device=draft_logits.device,
+            ),
+            "block_sum": torch.empty(
+                (num_rows, num_blocks),
+                dtype=torch.float32,
+                device=draft_logits.device,
+            ),
+            "uniforms": torch.empty(
+                (num_rows,), dtype=torch.float32, device=draft_logits.device
+            ),
+            "tokens": torch.empty(
+                (num_rows,), dtype=torch.int64, device=draft_logits.device
+            ),
+            "log_norm": torch.empty(
+                (num_rows,), dtype=torch.float32, device=draft_logits.device
+            ),
+        }
+        if cached_buffers is None:
+            _LATENTSPEC_LOGIT_SAMPLE_BUFFERS[key] = buffers
+    else:
+        buffers = cached_buffers
+
+    temperatures = temperatures.reshape(batch_size).to(
+        device=draft_logits.device, dtype=torch.float32
+    )
+    torch.rand(
+        (num_rows,),
+        dtype=torch.float32,
+        device=draft_logits.device,
+        generator=generator,
+        out=buffers["uniforms"][:num_rows],
+    )
+    _latentspec_logit_block_stats_kernel[(num_rows, num_blocks)](
+        flat_logits,
+        temperatures,
+        buffers["block_max"][:num_rows],
+        buffers["block_sum"][:num_rows],
+        flat_logits.stride(0),
+        VOCAB_SIZE=vocab_size,
+        N_BLOCKS=num_blocks,
+        ROWS_PER_REQUEST=rows_per_request,
+        BLOCK_SIZE=block_size,
+        num_warps=8,
+    )
+    _latentspec_logit_select_kernel[(num_rows,)](
+        flat_logits,
+        temperatures,
+        buffers["block_max"][:num_rows],
+        buffers["block_sum"][:num_rows],
+        buffers["uniforms"][:num_rows],
+        buffers["tokens"][:num_rows],
+        buffers["log_norm"][:num_rows],
+        flat_logits.stride(0),
+        VOCAB_SIZE=vocab_size,
+        N_BLOCKS=num_blocks,
+        N_BLOCK_LANES=triton.next_power_of_2(num_blocks),
+        ROWS_PER_REQUEST=rows_per_request,
+        BLOCK_SIZE=block_size,
+        num_warps=8,
+    )
+    return (
+        buffers["tokens"][:num_rows].view(batch_size, rows_per_request),
+        buffers["log_norm"][:num_rows].view(batch_size, rows_per_request),
+    )
+
+
 def sample_latentspec_draft_tokens(
     *,
     draft_logits: torch.Tensor,
@@ -799,11 +1155,12 @@ def sample_latentspec_draft_tokens(
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Sample a MySpec block and retain the exact proposal distribution ``q``.
 
-    The reference MySpec evaluator samples every proposal row independently from
-    ``softmax(draft_logits / temperature)``.  Its verifier then needs the complete
+    MySpec samples every proposal row independently from
+    ``softmax(draft_logits / temperature)``. Its verifier then needs the complete
     distribution from each row for the ``min(1, p / q)`` acceptance test and the
-    ``relu(p - q)`` rejection distribution.  Plain DFlash only retained argmax
-    tokens, which is insufficient for that algorithm when temperature is nonzero.
+    ``relu(p - q)`` rejection distribution. Reuse the sampling distribution as
+    ``q`` so sampling and verification are internally consistent and the large
+    full-vocabulary softmax is evaluated only once.
 
     Greedy requests can share a batch with sampling requests in SGLang.  Represent
     their deterministic proposal as a point mass so the same verifier remains
@@ -831,37 +1188,41 @@ def sample_latentspec_draft_tokens(
     )
     greedy_mask = greedy_mask.to(device=draft_logits.device, dtype=torch.bool)
 
-    # Match sample_tokens() in the evaluator first: it retains the logits dtype
-    # during temperature scaling/softmax (normally bf16 for this checkpoint).
+    # Keep the model dtype during sampling, as in the checkpoint evaluator.
     sample_temperatures = temperatures.to(dtype=draft_logits.dtype)
     sample_probs = torch.softmax(
         draft_logits / sample_temperatures[:, None, None], dim=-1
     )
-    sampled_tokens = torch.multinomial(
-        sample_probs.reshape(-1, vocab_size),
-        num_samples=1,
-        generator=generator,
-    ).reshape(bs, num_proposals)
-    del sample_probs
+    flat_probs = sample_probs.reshape(-1, vocab_size)
+    if flat_probs.device.type == "cuda":
+        sampled_tokens = _sample_latentspec_categorical_cuda(
+            flat_probs, generator=generator
+        ).reshape(bs, num_proposals)
+    else:
+        sampled_tokens = torch.multinomial(
+            flat_probs,
+            num_samples=1,
+            generator=generator,
+        ).reshape(bs, num_proposals)
+    # Keep q in the same BF16 representation that was sampled. The rejection
+    # kernel promotes values while computing p/q, so expanding the entire
+    # [batch, proposals, vocab] tensor to FP32 only adds memory traffic.
+    draft_probs = sample_probs
+    if not is_any_greedy:
+        return sampled_tokens.to(torch.int64), draft_probs.contiguous()
 
-    # logits_to_probs() is called separately by the evaluator and explicitly
-    # computes the q retained for verification in fp32.
-    draft_probs = torch.softmax(
-        draft_logits.float() / temperatures[:, None, None], dim=-1
-    )
     argmax_tokens = torch.argmax(draft_logits, dim=-1)
     tokens = torch.where(greedy_mask[:, None], argmax_tokens, sampled_tokens)
 
-    if is_any_greedy:
-        # Avoid allocating a second [B, proposals, vocab] one-hot tensor.
-        draft_probs.mul_((~greedy_mask)[:, None, None])
-        draft_probs.scatter_add_(
-            -1,
-            argmax_tokens.unsqueeze(-1),
-            greedy_mask[:, None, None]
-            .expand(bs, num_proposals, 1)
-            .to(draft_probs.dtype),
-        )
+    # Avoid allocating a second [B, proposals, vocab] one-hot tensor.
+    draft_probs.mul_((~greedy_mask)[:, None, None])
+    draft_probs.scatter_add_(
+        -1,
+        argmax_tokens.unsqueeze(-1),
+        greedy_mask[:, None, None]
+        .expand(bs, num_proposals, 1)
+        .to(draft_probs.dtype),
+    )
 
     return tokens.to(torch.int64), draft_probs.contiguous()
 
@@ -1294,6 +1655,33 @@ def table_qk_norm_rope_(
         qkv.stride(0),
         num_q_heads * head_dim,
         NHQ=num_q_heads,
+        D=head_dim,
+        EPS=eps,
+    )
+
+
+def table_k_norm_rope_(
+    packed_kv: torch.Tensor,
+    positions: torch.Tensor,
+    k_weight: torch.Tensor,
+    cos_sin_cache: torch.Tensor,
+    num_k_heads: int,
+    head_dim: int,
+    eps: float,
+) -> None:
+    """In-place K RMSNorm + RoPE on the K half of a packed ``[K, V]`` row."""
+    num_tokens = packed_kv.shape[0]
+    if num_tokens == 0:
+        return
+    _table_qk_norm_rope_kernel[(num_tokens, num_k_heads)](
+        packed_kv,
+        k_weight,
+        k_weight,
+        cos_sin_cache,
+        positions,
+        packed_kv.stride(0),
+        0,
+        NHQ=0,
         D=head_dim,
         EPS=eps,
     )
