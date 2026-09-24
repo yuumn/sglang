@@ -481,6 +481,10 @@ def get_draft_input_from_target_hidden_dim(model_runner: ModelRunner) -> int:
         layer_ids = get_eagle_config("eagle_aux_hidden_state_layer_ids", None)
         if layer_ids is None:
             layer_ids = getattr(hf_config, "eagle_aux_hidden_state_layer_ids", None)
+        if layer_ids is None:
+            # DeepSpec-style EAGLE3 checkpoints use this top-level field for
+            # the same concatenated target layer outputs.
+            layer_ids = getattr(hf_config, "target_layer_ids", None)
         num_aux = len(layer_ids) if layer_ids else 3
     return target_hidden * num_aux
 

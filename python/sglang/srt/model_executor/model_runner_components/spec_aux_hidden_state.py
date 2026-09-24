@@ -110,19 +110,32 @@ def _resolve_eagle_aux_hidden_state(
 
         if spec_algorithm.is_eagle3():
             config.eagle_use_aux_hidden_state = True
-            try:
-                eagle_config = getattr(
-                    draft_model_config.hf_config, "eagle_config", None
-                )
-                config.eagle_use_aux_hidden_state = eagle_config.get(
+            draft_hf_config = draft_model_config.hf_config
+            eagle_config = getattr(draft_hf_config, "eagle_config", None) or {}
+            if isinstance(eagle_config, dict):
+                use_aux_hidden_state = eagle_config.get(
                     "use_aux_hidden_state", True
                 )
-                config.eagle_aux_hidden_state_layer_ids = eagle_config[
+                layer_ids = eagle_config.get(
                     "eagle_aux_hidden_state_layer_ids"
-                ]
-            except:
-                # if there is no aux layer, set to None
-                config.eagle_aux_hidden_state_layer_ids = None
+                )
+            else:
+                use_aux_hidden_state = getattr(
+                    eagle_config, "use_aux_hidden_state", True
+                )
+                layer_ids = getattr(
+                    eagle_config, "eagle_aux_hidden_state_layer_ids", None
+                )
+            config.eagle_use_aux_hidden_state = use_aux_hidden_state
+            if layer_ids is None:
+                layer_ids = getattr(
+                    draft_hf_config, "eagle_aux_hidden_state_layer_ids", None
+                )
+            # DeepSpec-style Qwen3 EAGLE3 checkpoints predate eagle_config and
+            # store the equivalent HF layer-output ids at the top level.
+            if layer_ids is None:
+                layer_ids = getattr(draft_hf_config, "target_layer_ids", None)
+            config.eagle_aux_hidden_state_layer_ids = layer_ids
 
 
 def _resolve_dflash_aux_hidden_state(

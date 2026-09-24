@@ -7,7 +7,7 @@ unset HTTPS_PROXY
 
 TARGET_MODEL=${TARGET_MODEL:-/mnt/dolphinfs/hdd_pool/docker/user/hadoop-hldy-nlp/MMA/yuanerhang/workspace/spec/models/Qwen/Qwen3-4B}
 DRAFT_MODEL=${DRAFT_MODEL:-}
-SERVED_MODEL_NAME=${SERVED_MODEL_NAME:-qwen3-4b-eagle3 }
+SERVED_MODEL_NAME=${SERVED_MODEL_NAME:-qwen3-4b-eagle3}
 
 python -m sglang.launch_server \
   --model-path ${TARGET_MODEL} \
@@ -17,7 +17,10 @@ python -m sglang.launch_server \
   --tp-size 1 \
   --trust-remote-code \
   --speculative-algorithm EAGLE3 \
-  --speculative-draft-model-path ${DRAFT_MODEL} 
+  --speculative-draft-model-path ${DRAFT_MODEL} \
+  --speculative-num-steps 7 \
+  --speculative-eagle-topk 1 \
+  --speculative-num-draft-tokens 8
   # --speculative-num-draft-tokens 8
   # --dtype bfloat16 \
   # --attention-backend triton \

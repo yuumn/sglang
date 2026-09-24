@@ -150,6 +150,8 @@ class LlamaModel(nn.Module):
         if self.num_aux_hidden_states is None:
             eagle_config = getattr(config, "eagle_config", None) or {}
             layer_ids = eagle_config.get("eagle_aux_hidden_state_layer_ids")
+            if layer_ids is None:
+                layer_ids = getattr(config, "target_layer_ids", None)
             self.num_aux_hidden_states = len(layer_ids) if layer_ids else 3
 
         self.fc = torch.nn.Linear(

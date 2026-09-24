@@ -16,9 +16,9 @@ export LOWER_MODEL_NAME=qwen3-4b
 
 ## eagle3
 export DRAFT_MODEL=$EAGLE3_DRAFT_MODEL
-bash run_sglang_eagle3.sh 
-# SUFFIX=eagle3-epoch1 bash run_tps.sh 
-# bash /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/gpu.sh
+bash run_sglang_eagle3.sh &
+SUFFIX=eagle3-epoch1 bash run_tps.sh 
+bash /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/gpu.sh
 
 ## dflash
 ## dspark
@@ -26,7 +26,7 @@ bash run_sglang_eagle3.sh
 
 
 # qwen3-8b 1-epoch
-# EAGLE3_DRAFT_MODEL=
+EAGLE3_DRAFT_MODEL=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/DeepSpec_qwen3-8b_online_0920/train_log_checkpoints/train_eagle3_qwen3_8b_0.1ce-0.9l1_PerfectBlend_20260923_000811/checkpoints/eagle3_ttt7_qwen3_8b/step_2618
 DFLASH_DRAFT_MODEL=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/DeepSpec_qwen3-8b_online_0920/train_log_checkpoints/train_dflash_qwen3_8b_0.1ce-0.9l1_PerfectBlend_20260920_171219/checkpoints/dflash_block7_qwen3_8b/step_2618
 # DSPARK_DRAFT_MODEL=
 MYSPEC_DRAFT_MDOEL=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/DeepSpec_qwen3-8b_online_0920/train_log_checkpoints/train_myspec_qwen3_8b_0.1ce-0.9l1_PerfectBlend_20260922_040329/checkpoints/myspec_block7_qwen3_8b/step_2618
@@ -41,6 +41,11 @@ export LOWER_MODEL_NAME=qwen3-8b
 # bash /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/gpu.sh
 
 ## eagle3
+export DRAFT_MODEL=$EAGLE3_DRAFT_MODEL
+bash run_sglang_eagle3.sh &
+SUFFIX=eagle3-epoch1 bash run_tps.sh 
+bash /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/gpu.sh
+
 
 ## dflash
 # export DRAFT_MODEL=$DFLASH_DRAFT_MODEL
