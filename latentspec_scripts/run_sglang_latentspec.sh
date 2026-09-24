@@ -6,7 +6,6 @@ unset https_proxy
 unset HTTP_PROXY
 unset HTTPS_PROXY
 
-TARGET_MODEL=/mnt/dolphinfs/hdd_pool/docker/user/hadoop-hldy-nlp/MMA/yuanerhang/workspace/spec/models/Qwen/Qwen3-4B
 
 TARGET_MODEL=${TARGET_MODEL:-/mnt/dolphinfs/hdd_pool/docker/user/hadoop-hldy-nlp/MMA/yuanerhang/workspace/spec/models/Qwen/Qwen3-4B}
 # DRAFT_MODEL=${DRAFT_MODEL:-}
@@ -21,6 +20,6 @@ python -m sglang.launch_server \
   --tp-size 1 \
   --trust-remote-code \
   --speculative-algorithm LATENTSPEC \
-  --speculative-draft-model-path "${DRAFT_MODEL}" \
+  --speculative-draft-model-path ${DRAFT_MODEL} \
   --speculative-num-draft-tokens 8
   # --speculative-draft-model-quantization "${DRAFT_QUANTIZATION}" \
