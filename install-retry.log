@@ -1,0 +1,10 @@
+cargo 1.98.1 (797e8a9bc 2026-08-05)
+Using Python 3.12.3 environment at: .sglangenv_07
+error: Failed to build `sglang @ file:///mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python`
+  cause: Failed to resolve requirements from `build-system.requires`
+  cause: No solution found when resolving: `setuptools>=61.0`, `setuptools-rust>=1.11`, `setuptools-scm>=8.0`, `torch==2.13.0 (index: https://download.pytorch.org/whl/cu129)`, `wheel`
+  cause: Request failed after 3 retries in 50.3s
+  cause: Failed to fetch: `https://download.pytorch.org/whl/cu129/torch/`
+  cause: error sending request for url (https://download.pytorch.org/whl/cu129/torch/)
+  cause: client error (Connect)
+  cause: operation timed out

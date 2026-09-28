@@ -59,7 +59,7 @@ cover/
 *.pot
 
 # Django stuff:
-*.log
+# *.log
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -171,7 +171,7 @@ benchmark/mmlu/data.tar
 benchmark/llava_bench/images
 benchmark/llava_bench/mme_pack
 # *.jsonl
-latentspec_scripts/tps_results/
+# latentspec_scripts/tps_results/
 tmp*.txt
 /tmp/
 

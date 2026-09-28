@@ -136,7 +136,68 @@ class DSparkVerifyPlanner:
         self._dp_tier_gather_enabled = False
         self._is_verify_all = True
         self._uniform_layout_cache: dict = {}
-        if self._ragged_verify_mode is not RaggedVerifyMode.STATIC:
+        self._fixed_compact_verify_len = (
+            envs.SGLANG_DSPARK_FIXED_COMPACT_VERIFY_LEN.get()
+        )
+        self._fixed_compact_min_bs = envs.SGLANG_DSPARK_FIXED_COMPACT_MIN_BS.get()
+        self._fixed_compact_budget_frac = (
+            envs.SGLANG_DSPARK_FIXED_COMPACT_BUDGET_FRAC.get()
+        )
+        if self._fixed_compact_verify_len and self._fixed_compact_budget_frac >= 0:
+            raise ValueError(
+                "SGLANG_DSPARK_FIXED_COMPACT_VERIFY_LEN and "
+                "SGLANG_DSPARK_FIXED_COMPACT_BUDGET_FRAC are mutually exclusive."
+            )
+        if self._fixed_compact_verify_len:
+            if self._ragged_verify_mode is not RaggedVerifyMode.COMPACT:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_VERIFY_LEN requires "
+                    "SGLANG_RAGGED_VERIFY_MODE=compact."
+                )
+            if not 1 <= self._fixed_compact_verify_len <= verify_num_draft_tokens:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_VERIFY_LEN must be in "
+                    f"[1, {verify_num_draft_tokens}], got "
+                    f"{self._fixed_compact_verify_len}."
+                )
+            if self._fixed_compact_min_bs < 1:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_MIN_BS must be positive, got "
+                    f"{self._fixed_compact_min_bs}."
+                )
+            self._is_verify_all = False
+            if tp_rank == 0:
+                logger.info(
+                    "DSpark fixed compact verify enabled (verify_len=%d, "
+                    "min_bs=%d); confidence scheduling is disabled.",
+                    self._fixed_compact_verify_len,
+                    self._fixed_compact_min_bs,
+                )
+        elif self._fixed_compact_budget_frac >= 0:
+            if self._ragged_verify_mode is not RaggedVerifyMode.COMPACT:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_BUDGET_FRAC requires "
+                    "SGLANG_RAGGED_VERIFY_MODE=compact."
+                )
+            if not 0 <= self._fixed_compact_budget_frac <= 1:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_BUDGET_FRAC must be in [0, 1], "
+                    f"got {self._fixed_compact_budget_frac}."
+                )
+            if self._confidence_head is None:
+                raise ValueError(
+                    "SGLANG_DSPARK_FIXED_COMPACT_BUDGET_FRAC requires a trained "
+                    "confidence head."
+                )
+            self._is_verify_all = False
+            self._dynamic_graph_tier = not is_dp_attention_enabled()
+            if tp_rank == 0:
+                logger.info(
+                    "DSpark fixed compact budget enabled (fraction=%.4f); "
+                    "host confidence relay and budget planning are disabled.",
+                    self._fixed_compact_budget_frac,
+                )
+        elif self._ragged_verify_mode is not RaggedVerifyMode.STATIC:
             if self._confidence_head is None:
                 raise ValueError(
                     f"DSpark ragged-verify mode {self._ragged_verify_mode.value!r} "
@@ -209,6 +270,27 @@ class DSparkVerifyPlanner:
     @property
     def carries_confidence(self) -> bool:
         return self._confidence_head is not None
+
+    @property
+    def needs_confidence(self) -> bool:
+        """Whether the hot path needs to evaluate the confidence head.
+
+        Static verification never consumes confidence for scheduling.  Keep it
+        available for the explicit calibration/debug paths, but avoid paying
+        for the head on every decode step during normal static serving.
+        """
+        if self._confidence_head is None:
+            return False
+        if self._fixed_compact_budget_frac >= 0:
+            return True
+        if self._budget_planner is not None:
+            return True
+        if envs.SGLANG_DSPARK_DEBUG_CONFIDENCE_METRICS.get():
+            return True
+        if envs.SGLANG_DSPARK_STS_COLLECT_PATH.get():
+            return True
+        debug_components = envs.SGLANG_DSPARK_DEBUG_DUMP.get()
+        return bool(debug_components)
 
     @property
     def last_confidence_raw(self) -> Optional[torch.Tensor]:
@@ -367,6 +449,17 @@ class DSparkVerifyPlanner:
     ) -> Optional[int]:
         """Per-step verify-token budget: under overlap it was precomputed into
         the draft input by prepare_verify_budget; otherwise compute it now."""
+        if self._fixed_compact_budget_frac >= 0:
+            if confidence is None:
+                return None
+            candidate_cols = min(
+                self._schedule_cfg.resolved_max_verify_len(), confidence.shape[1]
+            )
+            return int(
+                self._fixed_compact_budget_frac
+                * int(confidence.shape[0])
+                * candidate_cols
+            )
         if not self.schedules_verify_budget or confidence is None:
             return None
         if not get_schedule().disable_overlap_schedule:
@@ -420,6 +513,25 @@ class DSparkVerifyPlanner:
     ) -> Optional[RaggedVerifyLayout]:
         if self._ragged_verify_mode is RaggedVerifyMode.STATIC:
             return None
+        if self._fixed_compact_verify_len:
+            bs = int(req_pool_indices.shape[0])
+            verify_len = (
+                self._fixed_compact_verify_len
+                if bs >= self._fixed_compact_min_bs
+                else self.verify_num_draft_tokens
+            )
+            key = (bs, global_num_reqs, verify_len)
+            if key not in self._uniform_layout_cache:
+                self._uniform_layout_cache[key] = uniform_ragged_layout(
+                    bs=bs,
+                    device=device,
+                    verify_num_draft_tokens=self.verify_num_draft_tokens,
+                    ragged_verify_mode=self._ragged_verify_mode,
+                    model_runner=self.model_runner,
+                    tier_num_reqs=global_num_reqs,
+                    verify_len=verify_len,
+                )
+            return self._uniform_layout_cache[key]
         if self._is_verify_all and self._ragged_verify_mode is RaggedVerifyMode.COMPACT:
             # Verify-all: the uniform layout (or None, past the captured grid)
             # is constant per (bs, tier); serve it from cache instead of paying
@@ -725,15 +837,21 @@ def uniform_ragged_layout(
     ragged_verify_mode: RaggedVerifyMode,
     model_runner,
     tier_num_reqs: Optional[int] = None,
+    verify_len: Optional[int] = None,
 ) -> Optional[RaggedVerifyLayout]:
     tier_num_reqs = bs if tier_num_reqs is None else tier_num_reqs
+    verify_len = (
+        verify_num_draft_tokens if verify_len is None else int(verify_len)
+    )
+    tier_num_tokens = tier_num_reqs * verify_len
     if ragged_layout_exceeds_captured_grid(
         num_reqs=tier_num_reqs,
         verify_num_draft_tokens=verify_num_draft_tokens,
         model_runner=model_runner,
+        tier_tokens_hint=tier_num_tokens,
     ):
         return None
-    verify_lens_cpu = [verify_num_draft_tokens] * bs
+    verify_lens_cpu = [verify_len] * bs
     grid = verify_layout_grid(
         verify_lens_cpu=verify_lens_cpu,
         ragged_verify_mode=ragged_verify_mode,
@@ -744,6 +862,7 @@ def uniform_ragged_layout(
         ragged_verify_mode=ragged_verify_mode,
         verify_num_draft_tokens=verify_num_draft_tokens,
         model_runner=model_runner,
+        tier_num_tokens=tier_num_tokens,
     )
     return RaggedVerifyLayout.from_verify_lens(
         verify_lens_cpu=verify_lens_cpu,

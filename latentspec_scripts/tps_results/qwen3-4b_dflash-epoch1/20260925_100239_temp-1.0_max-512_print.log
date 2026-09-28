@@ -1,0 +1,417 @@
+Server: http://127.0.0.1:30000
+Model: qwen3-4b-dflash
+Datasets: gsm8k, math500, aime25, humaneval, mbpp, livecodebench, mt-bench, alpaca, arena-hard-v2
+Incremental JSONL output: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Starting 32 warmup requests with concurrency 16...
+Warmup completed in 2.22s: 32/32 succeeded.
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=1, requests=500...
+Completed dataset=gsm8k, concurrency=1: including_first_token(time=146.1670s, tps=1007.36), excluding_first_token(time=136.8962s, tps=1071.93), successful=500/500
+  TTFT(ms): avg=18.54, p50=18.48, p95=21.36, p99=23.65
+  TPOT(ms): avg=0.91, p50=0.89, p95=1.24, p99=1.36
+Incrementally saved dataset=gsm8k, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=1, requests=500...
+Completed dataset=math500, concurrency=1: including_first_token(time=236.0898s, tps=927.63), excluding_first_token(time=226.4845s, tps=964.77), successful=500/500
+  TTFT(ms): avg=19.21, p50=17.87, p95=27.62, p99=38.91
+  TPOT(ms): avg=1.01, p50=0.97, p95=1.44, p99=1.78
+Incrementally saved dataset=math500, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=1, requests=30...
+Completed dataset=aime25, concurrency=1: including_first_token(time=20.7488s, tps=740.28), excluding_first_token(time=19.9447s, tps=768.63), successful=30/30
+  TTFT(ms): avg=26.80, p50=21.25, p95=57.38, p99=65.09
+  TPOT(ms): avg=1.30, p50=1.21, p95=1.71, p99=1.84
+Incrementally saved dataset=aime25, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=1, requests=164...
+Completed dataset=humaneval, concurrency=1: including_first_token(time=76.5855s, tps=854.84), excluding_first_token(time=72.9732s, tps=894.90), successful=164/164
+  TTFT(ms): avg=22.03, p50=20.64, p95=30.27, p99=36.27
+  TPOT(ms): avg=1.11, p50=1.10, p95=1.36, p99=1.55
+Incrementally saved dataset=humaneval, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=1, requests=256...
+Completed dataset=mbpp, concurrency=1: including_first_token(time=94.9155s, tps=817.56), excluding_first_token(time=90.8741s, tps=851.10), successful=256/256
+  TTFT(ms): avg=15.79, p50=15.64, p95=16.32, p99=17.43
+  TPOT(ms): avg=1.14, p50=1.11, p95=1.49, p99=1.61
+Incrementally saved dataset=mbpp, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=1, requests=500...
+Completed dataset=livecodebench, concurrency=1: including_first_token(time=155.6466s, tps=746.70), excluding_first_token(time=133.3144s, tps=868.04), successful=500/500
+  TTFT(ms): avg=44.66, p50=41.92, p95=67.90, p99=88.79
+  TPOT(ms): avg=1.08, p50=1.05, p95=1.48, p99=1.62
+Incrementally saved dataset=livecodebench, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=1, requests=80...
+Completed dataset=mt-bench, concurrency=1: including_first_token(time=46.8787s, tps=571.96), excluding_first_token(time=45.4217s, tps=588.55), successful=80/80
+  TTFT(ms): avg=18.21, p50=16.10, p95=26.88, p99=34.81
+  TPOT(ms): avg=1.63, p50=1.50, p95=2.47, p99=2.74
+Incrementally saved dataset=mt-bench, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=1, requests=500...
+Completed dataset=alpaca, concurrency=1: including_first_token(time=245.5107s, tps=527.08), excluding_first_token(time=237.6696s, tps=542.36), successful=500/500
+  TTFT(ms): avg=15.68, p50=15.61, p95=16.46, p99=18.76
+  TPOT(ms): avg=1.80, p50=1.84, p95=2.52, p99=2.80
+Incrementally saved dataset=alpaca, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=1, requests=500...
+Completed dataset=arena-hard-v2, concurrency=1: including_first_token(time=494.9548s, tps=475.88), excluding_first_token(time=477.8976s, tps=491.82), successful=500/500
+  TTFT(ms): avg=34.11, p50=19.81, p95=101.53, p99=245.19
+  TPOT(ms): avg=2.08, p50=1.93, p95=3.62, p99=3.95
+Incrementally saved dataset=arena-hard-v2, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=2, requests=500...
+Completed dataset=gsm8k, concurrency=2: including_first_token(time=79.2036s, tps=1879.32), excluding_first_token(time=78.7410s, tps=1884.01), successful=500/500
+  TTFT(ms): avg=21.82, p50=21.74, p95=25.56, p99=29.33
+  TPOT(ms): avg=0.97, p50=0.94, p95=1.27, p99=1.51
+Incrementally saved dataset=gsm8k, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=2, requests=500...
+Completed dataset=math500, concurrency=2: including_first_token(time=125.8462s, tps=1734.21), excluding_first_token(time=125.7070s, tps=1732.16), successful=500/500
+  TTFT(ms): avg=22.18, p50=20.93, p95=29.95, p99=38.05
+  TPOT(ms): avg=1.08, p50=1.02, p95=1.54, p99=1.82
+Incrementally saved dataset=math500, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=2, requests=30...
+Completed dataset=aime25, concurrency=2: including_first_token(time=11.2425s, tps=1366.25), excluding_first_token(time=11.1646s, tps=1373.09), successful=30/30
+  TTFT(ms): avg=31.78, p50=24.37, p95=71.77, p99=80.06
+  TPOT(ms): avg=1.38, p50=1.36, p95=1.84, p99=1.91
+Incrementally saved dataset=aime25, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=2, requests=164...
+Completed dataset=humaneval, concurrency=2: including_first_token(time=41.3156s, tps=1593.66), excluding_first_token(time=41.2229s, tps=1593.26), successful=164/164
+  TTFT(ms): avg=25.18, p50=23.78, p95=34.15, p99=38.08
+  TPOT(ms): avg=1.19, p50=1.15, p95=1.44, p99=1.81
+Incrementally saved dataset=humaneval, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=2, requests=256...
+Completed dataset=mbpp, concurrency=2: including_first_token(time=49.6517s, tps=1547.56), excluding_first_token(time=49.4256s, tps=1549.46), successful=256/256
+  TTFT(ms): avg=18.25, p50=17.93, p95=20.11, p99=25.36
+  TPOT(ms): avg=1.20, p50=1.17, p95=1.52, p99=1.65
+Incrementally saved dataset=mbpp, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=2, requests=500...
+Completed dataset=livecodebench, concurrency=2: including_first_token(time=90.7451s, tps=1261.34), excluding_first_token(time=89.7448s, tps=1269.82), successful=500/500
+  TTFT(ms): avg=49.13, p50=45.30, p95=75.40, p99=100.89
+  TPOT(ms): avg=1.27, p50=1.25, p95=1.77, p99=1.93
+Incrementally saved dataset=livecodebench, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=2, requests=80...
+Completed dataset=mt-bench, concurrency=2: including_first_token(time=26.0741s, tps=1052.19), excluding_first_token(time=25.9730s, tps=1053.21), successful=80/80
+  TTFT(ms): avg=21.75, p50=19.09, p95=32.91, p99=51.85
+  TPOT(ms): avg=1.75, p50=1.68, p95=2.62, p99=2.74
+Incrementally saved dataset=mt-bench, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=2, requests=500...
+Completed dataset=alpaca, concurrency=2: including_first_token(time=128.5126s, tps=997.37), excluding_first_token(time=128.3518s, tps=994.72), successful=500/500
+  TTFT(ms): avg=18.27, p50=18.00, p95=19.81, p99=23.36
+  TPOT(ms): avg=1.88, p50=1.94, p95=2.57, p99=3.01
+Incrementally saved dataset=alpaca, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=2, requests=500...
+Completed dataset=arena-hard-v2, concurrency=2: including_first_token(time=265.6972s, tps=891.26), excluding_first_token(time=265.5550s, tps=889.85), successful=500/500
+  TTFT(ms): avg=37.41, p50=22.90, p95=108.11, p99=246.58
+  TPOT(ms): avg=2.21, p50=2.05, p95=3.90, p99=4.14
+Incrementally saved dataset=arena-hard-v2, concurrency=2 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=4, requests=500...
+Completed dataset=gsm8k, concurrency=4: including_first_token(time=45.6430s, tps=3254.54), excluding_first_token(time=45.6067s, tps=3246.17), successful=500/500
+  TTFT(ms): avg=23.33, p50=22.59, p95=30.19, p99=34.41
+  TPOT(ms): avg=1.12, p50=1.09, p95=1.45, p99=1.66
+Incrementally saved dataset=gsm8k, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=4, requests=500...
+Completed dataset=math500, concurrency=4: including_first_token(time=71.9584s, tps=3043.16), excluding_first_token(time=71.9139s, tps=3038.09), successful=500/500
+  TTFT(ms): avg=23.51, p50=21.82, p95=31.96, p99=57.94
+  TPOT(ms): avg=1.23, p50=1.18, p95=1.75, p99=1.98
+Incrementally saved dataset=math500, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=4, requests=30...
+Completed dataset=aime25, concurrency=4: including_first_token(time=6.8564s, tps=2240.23), excluding_first_token(time=6.7872s, tps=2258.67), successful=30/30
+  TTFT(ms): avg=35.36, p50=25.94, p95=73.60, p99=73.76
+  TPOT(ms): avg=1.64, p50=1.52, p95=2.22, p99=2.38
+Incrementally saved dataset=aime25, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=4, requests=164...
+Completed dataset=humaneval, concurrency=4: including_first_token(time=23.5866s, tps=2780.52), excluding_first_token(time=23.5286s, tps=2780.40), successful=164/164
+  TTFT(ms): avg=28.16, p50=25.21, p95=44.76, p99=80.73
+  TPOT(ms): avg=1.36, p50=1.34, p95=1.66, p99=1.85
+Incrementally saved dataset=humaneval, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=4, requests=256...
+Completed dataset=mbpp, concurrency=4: including_first_token(time=28.0688s, tps=2714.58), excluding_first_token(time=28.0416s, tps=2708.08), successful=256/256
+  TTFT(ms): avg=19.41, p50=18.70, p95=23.77, p99=34.46
+  TPOT(ms): avg=1.35, p50=1.32, p95=1.71, p99=2.06
+Incrementally saved dataset=mbpp, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=4, requests=500...
+Completed dataset=livecodebench, concurrency=4: including_first_token(time=59.3851s, tps=1970.49), excluding_first_token(time=59.2762s, tps=1965.68), successful=500/500
+  TTFT(ms): avg=53.68, p50=49.49, p95=91.33, p99=119.61
+  TPOT(ms): avg=1.67, p50=1.67, p95=2.35, p99=2.67
+Incrementally saved dataset=livecodebench, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=4, requests=80...
+Completed dataset=mt-bench, concurrency=4: including_first_token(time=14.3223s, tps=1873.65), excluding_first_token(time=14.2942s, tps=1871.74), successful=80/80
+  TTFT(ms): avg=23.61, p50=20.20, p95=39.32, p99=53.12
+  TPOT(ms): avg=1.95, p50=1.92, p95=3.02, p99=3.27
+Incrementally saved dataset=mt-bench, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=4, requests=500...
+Completed dataset=alpaca, concurrency=4: including_first_token(time=72.9640s, tps=1767.54), excluding_first_token(time=72.9406s, tps=1761.26), successful=500/500
+  TTFT(ms): avg=19.18, p50=18.78, p95=22.70, p99=25.40
+  TPOT(ms): avg=2.14, p50=2.17, p95=3.00, p99=3.59
+Incrementally saved dataset=alpaca, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=4, requests=500...
+Completed dataset=arena-hard-v2, concurrency=4: including_first_token(time=153.6491s, tps=1541.79), excluding_first_token(time=153.5554s, tps=1539.48), successful=500/500
+  TTFT(ms): avg=40.04, p50=24.13, p95=109.49, p99=268.01
+  TPOT(ms): avg=2.55, p50=2.39, p95=4.31, p99=4.91
+Incrementally saved dataset=arena-hard-v2, concurrency=4 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=8, requests=500...
+Completed dataset=gsm8k, concurrency=8: including_first_token(time=34.1236s, tps=4364.64), excluding_first_token(time=34.0680s, tps=4357.08), successful=500/500
+  TTFT(ms): avg=28.24, p50=26.95, p95=37.23, p99=61.50
+  TPOT(ms): avg=1.69, p50=1.66, p95=2.18, p99=2.59
+Incrementally saved dataset=gsm8k, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=8, requests=500...
+Completed dataset=math500, concurrency=8: including_first_token(time=53.1935s, tps=4114.17), excluding_first_token(time=53.1271s, tps=4109.90), successful=500/500
+  TTFT(ms): avg=28.69, p50=26.49, p95=38.70, p99=72.25
+  TPOT(ms): avg=1.83, p50=1.74, p95=2.64, p99=3.08
+Incrementally saved dataset=math500, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=8, requests=30...
+Completed dataset=aime25, concurrency=8: including_first_token(time=5.1999s, tps=2953.88), excluding_first_token(time=5.0974s, tps=3007.43), successful=30/30
+  TTFT(ms): avg=57.25, p50=34.36, p95=122.77, p99=122.94
+  TPOT(ms): avg=2.31, p50=2.25, p95=3.08, p99=3.19
+Incrementally saved dataset=aime25, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=8, requests=164...
+Completed dataset=humaneval, concurrency=8: including_first_token(time=17.5107s, tps=3738.28), excluding_first_token(time=17.4308s, tps=3746.01), successful=164/164
+  TTFT(ms): avg=33.74, p50=30.37, p95=47.13, p99=85.86
+  TPOT(ms): avg=2.03, p50=2.00, p95=2.57, p99=2.85
+Incrementally saved dataset=humaneval, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=8, requests=256...
+Completed dataset=mbpp, concurrency=8: including_first_token(time=20.4784s, tps=3735.40), excluding_first_token(time=20.4463s, tps=3728.73), successful=256/256
+  TTFT(ms): avg=23.59, p50=22.92, p95=28.28, p99=44.61
+  TPOT(ms): avg=1.98, p50=1.95, p95=2.48, p99=2.87
+Incrementally saved dataset=mbpp, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=8, requests=500...
+Completed dataset=livecodebench, concurrency=8: including_first_token(time=48.2082s, tps=2397.58), excluding_first_token(time=47.9562s, tps=2399.75), successful=500/500
+  TTFT(ms): avg=66.58, p50=57.78, p95=109.22, p99=257.87
+  TPOT(ms): avg=2.84, p50=2.83, p95=3.97, p99=4.39
+Incrementally saved dataset=livecodebench, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=8, requests=80...
+Completed dataset=mt-bench, concurrency=8: including_first_token(time=10.5859s, tps=2519.67), excluding_first_token(time=10.5469s, tps=2521.40), successful=80/80
+  TTFT(ms): avg=28.67, p50=24.85, p95=45.06, p99=46.05
+  TPOT(ms): avg=2.83, p50=2.82, p95=4.25, p99=4.85
+Incrementally saved dataset=mt-bench, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=8, requests=500...
+Completed dataset=alpaca, concurrency=8: including_first_token(time=52.8894s, tps=2437.01), excluding_first_token(time=52.8572s, tps=2429.03), successful=500/500
+  TTFT(ms): avg=23.52, p50=23.12, p95=28.20, p99=37.76
+  TPOT(ms): avg=3.15, p50=3.17, p95=4.59, p99=5.52
+Incrementally saved dataset=alpaca, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=8, requests=500...
+Completed dataset=arena-hard-v2, concurrency=8: including_first_token(time=114.4920s, tps=2063.19), excluding_first_token(time=114.3511s, tps=2061.36), successful=500/500
+  TTFT(ms): avg=45.78, p50=28.88, p95=142.64, p99=251.13
+  TPOT(ms): avg=3.84, p50=3.59, p95=6.64, p99=7.85
+Incrementally saved dataset=arena-hard-v2, concurrency=8 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=16, requests=500...
+Completed dataset=gsm8k, concurrency=16: including_first_token(time=29.3650s, tps=5053.06), excluding_first_token(time=29.2886s, tps=5049.17), successful=500/500
+  TTFT(ms): avg=39.89, p50=37.33, p95=52.94, p99=112.31
+  TPOT(ms): avg=2.93, p50=2.82, p95=3.91, p99=4.62
+Incrementally saved dataset=gsm8k, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=16, requests=500...
+Completed dataset=math500, concurrency=16: including_first_token(time=45.5304s, tps=4809.40), excluding_first_token(time=45.4398s, tps=4807.99), successful=500/500
+  TTFT(ms): avg=41.19, p50=36.74, p95=60.94, p99=145.03
+  TPOT(ms): avg=3.13, p50=2.96, p95=4.44, p99=5.13
+Incrementally saved dataset=math500, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=16, requests=30...
+Completed dataset=aime25, concurrency=16: including_first_token(time=4.2913s, tps=3579.37), excluding_first_token(time=4.1891s, tps=3659.49), successful=30/30
+  TTFT(ms): avg=134.15, p50=156.96, p95=217.66, p99=217.80
+  TPOT(ms): avg=3.70, p50=3.64, p95=5.19, p99=5.72
+Incrementally saved dataset=aime25, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=16, requests=164...
+Completed dataset=humaneval, concurrency=16: including_first_token(time=15.4576s, tps=4299.31), excluding_first_token(time=15.3183s, tps=4327.69), successful=164/164
+  TTFT(ms): avg=53.43, p50=42.30, p95=150.23, p99=150.52
+  TPOT(ms): avg=3.44, p50=3.39, p95=4.40, p99=4.57
+Incrementally saved dataset=humaneval, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=16, requests=256...
+Completed dataset=mbpp, concurrency=16: including_first_token(time=17.5440s, tps=4367.41), excluding_first_token(time=17.5096s, tps=4361.38), successful=256/256
+  TTFT(ms): avg=33.30, p50=32.96, p95=51.77, p99=56.02
+  TPOT(ms): avg=3.40, p50=3.33, p95=4.30, p99=4.85
+Incrementally saved dataset=mbpp, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=16, requests=500...
+Completed dataset=livecodebench, concurrency=16: including_first_token(time=43.0678s, tps=2697.28), excluding_first_token(time=42.5536s, tps=2718.12), successful=500/500
+  TTFT(ms): avg=99.99, p50=81.12, p95=159.32, p99=580.80
+  TPOT(ms): avg=5.12, p50=5.08, p95=7.34, p99=8.19
+Incrementally saved dataset=livecodebench, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=16, requests=80...
+Completed dataset=mt-bench, concurrency=16: including_first_token(time=8.9267s, tps=2950.80), excluding_first_token(time=8.8875s, tps=2954.81), successful=80/80
+  TTFT(ms): avg=47.21, p50=37.01, p95=89.11, p99=89.42
+  TPOT(ms): avg=4.70, p50=4.67, p95=7.02, p99=8.19
+Incrementally saved dataset=mt-bench, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=16, requests=500...
+Completed dataset=alpaca, concurrency=16: including_first_token(time=44.6073s, tps=2862.60), excluding_first_token(time=44.5775s, tps=2853.30), successful=500/500
+  TTFT(ms): avg=33.40, p50=33.14, p95=39.15, p99=71.77
+  TPOT(ms): avg=5.29, p50=5.40, p95=7.51, p99=9.16
+Incrementally saved dataset=alpaca, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=16, requests=500...
+Completed dataset=arena-hard-v2, concurrency=16: including_first_token(time=103.0090s, tps=2290.14), excluding_first_token(time=102.8712s, tps=2288.35), successful=500/500
+  TTFT(ms): avg=69.19, p50=42.55, p95=199.43, p99=434.37
+  TPOT(ms): avg=6.94, p50=6.52, p95=12.18, p99=14.40
+Incrementally saved dataset=arena-hard-v2, concurrency=16 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=gsm8k, concurrency=32, requests=500...
+Completed dataset=gsm8k, concurrency=32: including_first_token(time=26.4117s, tps=5578.66), excluding_first_token(time=26.3365s, tps=5575.61), successful=500/500
+  TTFT(ms): avg=64.38, p50=57.57, p95=187.37, p99=241.77
+  TPOT(ms): avg=5.32, p50=5.21, p95=6.86, p99=7.84
+Incrementally saved dataset=gsm8k, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=32, requests=500...
+Completed dataset=math500, concurrency=32: including_first_token(time=41.3711s, tps=5304.86), excluding_first_token(time=41.2806s, tps=5304.38), successful=500/500
+  TTFT(ms): avg=67.49, p50=57.43, p95=231.27, p99=241.41
+  TPOT(ms): avg=5.65, p50=5.35, p95=8.18, p99=8.97
+Incrementally saved dataset=math500, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=32, requests=30...
+Completed dataset=aime25, concurrency=32: including_first_token(time=3.9349s, tps=3903.54), excluding_first_token(time=3.8326s, tps=3999.93), successful=30/30
+  TTFT(ms): avg=409.86, p50=428.09, p95=428.87, p99=429.05
+  TPOT(ms): avg=5.63, p50=5.70, p95=6.50, p99=6.77
+Incrementally saved dataset=aime25, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=humaneval, concurrency=32, requests=164...
+Completed dataset=humaneval, concurrency=32: including_first_token(time=13.7870s, tps=4786.31), excluding_first_token(time=13.6473s, tps=4823.30), successful=164/164
+  TTFT(ms): avg=100.59, p50=67.61, p95=261.27, p99=261.81
+  TPOT(ms): avg=6.17, p50=6.07, p95=7.77, p99=8.92
+Incrementally saved dataset=humaneval, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mbpp, concurrency=32, requests=256...
+Completed dataset=mbpp, concurrency=32: including_first_token(time=16.1279s, tps=4870.89), excluding_first_token(time=16.0953s, tps=4864.85), successful=256/256
+  TTFT(ms): avg=52.38, p50=53.30, p95=87.82, p99=88.18
+  TPOT(ms): avg=5.95, p50=5.93, p95=7.51, p99=8.17
+Incrementally saved dataset=mbpp, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=livecodebench, concurrency=32, requests=500...
+Completed dataset=livecodebench, concurrency=32: including_first_token(time=40.4033s, tps=2829.03), excluding_first_token(time=39.8782s, tps=2853.74), successful=500/500
+  TTFT(ms): avg=180.53, p50=123.16, p95=1004.49, p99=1034.80
+  TPOT(ms): avg=9.68, p50=9.56, p95=13.41, p99=15.05
+Incrementally saved dataset=livecodebench, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=mt-bench, concurrency=32, requests=80...
+Completed dataset=mt-bench, concurrency=32: including_first_token(time=8.1193s, tps=3276.62), excluding_first_token(time=8.0667s, tps=3288.09), successful=80/80
+  TTFT(ms): avg=93.73, p50=64.51, p95=157.30, p99=157.55
+  TPOT(ms): avg=8.03, p50=7.22, p95=13.37, p99=13.80
+Incrementally saved dataset=mt-bench, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=alpaca, concurrency=32, requests=500...
+Completed dataset=alpaca, concurrency=32: including_first_token(time=40.4866s, tps=3159.46), excluding_first_token(time=40.4553s, tps=3149.55), successful=500/500
+  TTFT(ms): avg=50.55, p50=53.27, p95=73.48, p99=88.68
+  TPOT(ms): avg=9.63, p50=9.77, p95=13.80, p99=17.41
+Incrementally saved dataset=alpaca, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=arena-hard-v2, concurrency=32, requests=500...
+Completed dataset=arena-hard-v2, concurrency=32: including_first_token(time=92.7400s, tps=2553.33), excluding_first_token(time=92.6024s, tps=2551.73), successful=500/500
+  TTFT(ms): avg=123.51, p50=65.47, p95=634.52, p99=827.44
+  TPOT(ms): avg=12.40, p50=11.37, p95=21.33, p99=25.36
+Incrementally saved dataset=arena-hard-v2, concurrency=32 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+
+Aggregate TPS including first-token latency (tokens/s)
+dataset       | c=1     | c=2     | c=4     | c=8     | c=16    | c=32   
+--------------+---------+---------+---------+---------+---------+--------
+gsm8k         | 1007.36 | 1879.32 | 3254.54 | 4364.64 | 5053.06 | 5578.66
+math500       | 927.63  | 1734.21 | 3043.16 | 4114.17 | 4809.40 | 5304.86
+aime25        | 740.28  | 1366.25 | 2240.23 | 2953.88 | 3579.37 | 3903.54
+humaneval     | 854.84  | 1593.66 | 2780.52 | 3738.28 | 4299.31 | 4786.31
+mbpp          | 817.56  | 1547.56 | 2714.58 | 3735.40 | 4367.41 | 4870.89
+livecodebench | 746.70  | 1261.34 | 1970.49 | 2397.58 | 2697.28 | 2829.03
+mt-bench      | 571.96  | 1052.19 | 1873.65 | 2519.67 | 2950.80 | 3276.62
+alpaca        | 527.08  | 997.37  | 1767.54 | 2437.01 | 2862.60 | 3159.46
+arena-hard-v2 | 475.88  | 891.26  | 1541.79 | 2063.19 | 2290.14 | 2553.33
+
+Aggregate decode TPS excluding first-token latency (tokens/s)
+dataset       | c=1     | c=2     | c=4     | c=8     | c=16    | c=32   
+--------------+---------+---------+---------+---------+---------+--------
+gsm8k         | 1071.93 | 1884.01 | 3246.17 | 4357.08 | 5049.17 | 5575.61
+math500       | 964.77  | 1732.16 | 3038.09 | 4109.90 | 4807.99 | 5304.38
+aime25        | 768.63  | 1373.09 | 2258.67 | 3007.43 | 3659.49 | 3999.93
+humaneval     | 894.90  | 1593.26 | 2780.40 | 3746.01 | 4327.69 | 4823.30
+mbpp          | 851.10  | 1549.46 | 2708.08 | 3728.73 | 4361.38 | 4864.85
+livecodebench | 868.04  | 1269.82 | 1965.68 | 2399.75 | 2718.12 | 2853.74
+mt-bench      | 588.55  | 1053.21 | 1871.74 | 2521.40 | 2954.81 | 3288.09
+alpaca        | 542.36  | 994.72  | 1761.26 | 2429.03 | 2853.30 | 3149.55
+arena-hard-v2 | 491.82  | 889.85  | 1539.48 | 2061.36 | 2288.35 | 2551.73
+
+Latency distribution (ms)
+dataset       | concurrency | TTFT avg | TTFT p50 | TTFT p95 | TTFT p99 | TPOT avg | TPOT p50 | TPOT p95 | TPOT p99
+--------------+-------------+----------+----------+----------+----------+----------+----------+----------+---------
+gsm8k         | 1           | 18.54    | 18.48    | 21.36    | 23.65    | 0.91     | 0.89     | 1.24     | 1.36    
+math500       | 1           | 19.21    | 17.87    | 27.62    | 38.91    | 1.01     | 0.97     | 1.44     | 1.78    
+aime25        | 1           | 26.80    | 21.25    | 57.38    | 65.09    | 1.30     | 1.21     | 1.71     | 1.84    
+humaneval     | 1           | 22.03    | 20.64    | 30.27    | 36.27    | 1.11     | 1.10     | 1.36     | 1.55    
+mbpp          | 1           | 15.79    | 15.64    | 16.32    | 17.43    | 1.14     | 1.11     | 1.49     | 1.61    
+livecodebench | 1           | 44.66    | 41.92    | 67.90    | 88.79    | 1.08     | 1.05     | 1.48     | 1.62    
+mt-bench      | 1           | 18.21    | 16.10    | 26.88    | 34.81    | 1.63     | 1.50     | 2.47     | 2.74    
+alpaca        | 1           | 15.68    | 15.61    | 16.46    | 18.76    | 1.80     | 1.84     | 2.52     | 2.80    
+arena-hard-v2 | 1           | 34.11    | 19.81    | 101.53   | 245.19   | 2.08     | 1.93     | 3.62     | 3.95    
+gsm8k         | 2           | 21.82    | 21.74    | 25.56    | 29.33    | 0.97     | 0.94     | 1.27     | 1.51    
+math500       | 2           | 22.18    | 20.93    | 29.95    | 38.05    | 1.08     | 1.02     | 1.54     | 1.82    
+aime25        | 2           | 31.78    | 24.37    | 71.77    | 80.06    | 1.38     | 1.36     | 1.84     | 1.91    
+humaneval     | 2           | 25.18    | 23.78    | 34.15    | 38.08    | 1.19     | 1.15     | 1.44     | 1.81    
+mbpp          | 2           | 18.25    | 17.93    | 20.11    | 25.36    | 1.20     | 1.17     | 1.52     | 1.65    
+livecodebench | 2           | 49.13    | 45.30    | 75.40    | 100.89   | 1.27     | 1.25     | 1.77     | 1.93    
+mt-bench      | 2           | 21.75    | 19.09    | 32.91    | 51.85    | 1.75     | 1.68     | 2.62     | 2.74    
+alpaca        | 2           | 18.27    | 18.00    | 19.81    | 23.36    | 1.88     | 1.94     | 2.57     | 3.01    
+arena-hard-v2 | 2           | 37.41    | 22.90    | 108.11   | 246.58   | 2.21     | 2.05     | 3.90     | 4.14    
+gsm8k         | 4           | 23.33    | 22.59    | 30.19    | 34.41    | 1.12     | 1.09     | 1.45     | 1.66    
+math500       | 4           | 23.51    | 21.82    | 31.96    | 57.94    | 1.23     | 1.18     | 1.75     | 1.98    
+aime25        | 4           | 35.36    | 25.94    | 73.60    | 73.76    | 1.64     | 1.52     | 2.22     | 2.38    
+humaneval     | 4           | 28.16    | 25.21    | 44.76    | 80.73    | 1.36     | 1.34     | 1.66     | 1.85    
+mbpp          | 4           | 19.41    | 18.70    | 23.77    | 34.46    | 1.35     | 1.32     | 1.71     | 2.06    
+livecodebench | 4           | 53.68    | 49.49    | 91.33    | 119.61   | 1.67     | 1.67     | 2.35     | 2.67    
+mt-bench      | 4           | 23.61    | 20.20    | 39.32    | 53.12    | 1.95     | 1.92     | 3.02     | 3.27    
+alpaca        | 4           | 19.18    | 18.78    | 22.70    | 25.40    | 2.14     | 2.17     | 3.00     | 3.59    
+arena-hard-v2 | 4           | 40.04    | 24.13    | 109.49   | 268.01   | 2.55     | 2.39     | 4.31     | 4.91    
+gsm8k         | 8           | 28.24    | 26.95    | 37.23    | 61.50    | 1.69     | 1.66     | 2.18     | 2.59    
+math500       | 8           | 28.69    | 26.49    | 38.70    | 72.25    | 1.83     | 1.74     | 2.64     | 3.08    
+aime25        | 8           | 57.25    | 34.36    | 122.77   | 122.94   | 2.31     | 2.25     | 3.08     | 3.19    
+humaneval     | 8           | 33.74    | 30.37    | 47.13    | 85.86    | 2.03     | 2.00     | 2.57     | 2.85    
+mbpp          | 8           | 23.59    | 22.92    | 28.28    | 44.61    | 1.98     | 1.95     | 2.48     | 2.87    
+livecodebench | 8           | 66.58    | 57.78    | 109.22   | 257.87   | 2.84     | 2.83     | 3.97     | 4.39    
+mt-bench      | 8           | 28.67    | 24.85    | 45.06    | 46.05    | 2.83     | 2.82     | 4.25     | 4.85    
+alpaca        | 8           | 23.52    | 23.12    | 28.20    | 37.76    | 3.15     | 3.17     | 4.59     | 5.52    
+arena-hard-v2 | 8           | 45.78    | 28.88    | 142.64   | 251.13   | 3.84     | 3.59     | 6.64     | 7.85    
+gsm8k         | 16          | 39.89    | 37.33    | 52.94    | 112.31   | 2.93     | 2.82     | 3.91     | 4.62    
+math500       | 16          | 41.19    | 36.74    | 60.94    | 145.03   | 3.13     | 2.96     | 4.44     | 5.13    
+aime25        | 16          | 134.15   | 156.96   | 217.66   | 217.80   | 3.70     | 3.64     | 5.19     | 5.72    
+humaneval     | 16          | 53.43    | 42.30    | 150.23   | 150.52   | 3.44     | 3.39     | 4.40     | 4.57    
+mbpp          | 16          | 33.30    | 32.96    | 51.77    | 56.02    | 3.40     | 3.33     | 4.30     | 4.85    
+livecodebench | 16          | 99.99    | 81.12    | 159.32   | 580.80   | 5.12     | 5.08     | 7.34     | 8.19    
+mt-bench      | 16          | 47.21    | 37.01    | 89.11    | 89.42    | 4.70     | 4.67     | 7.02     | 8.19    
+alpaca        | 16          | 33.40    | 33.14    | 39.15    | 71.77    | 5.29     | 5.40     | 7.51     | 9.16    
+arena-hard-v2 | 16          | 69.19    | 42.55    | 199.43   | 434.37   | 6.94     | 6.52     | 12.18    | 14.40   
+gsm8k         | 32          | 64.38    | 57.57    | 187.37   | 241.77   | 5.32     | 5.21     | 6.86     | 7.84    
+math500       | 32          | 67.49    | 57.43    | 231.27   | 241.41   | 5.65     | 5.35     | 8.18     | 8.97    
+aime25        | 32          | 409.86   | 428.09   | 428.87   | 429.05   | 5.63     | 5.70     | 6.50     | 6.77    
+humaneval     | 32          | 100.59   | 67.61    | 261.27   | 261.81   | 6.17     | 6.07     | 7.77     | 8.92    
+mbpp          | 32          | 52.38    | 53.30    | 87.82    | 88.18    | 5.95     | 5.93     | 7.51     | 8.17    
+livecodebench | 32          | 180.53   | 123.16   | 1004.49  | 1034.80  | 9.68     | 9.56     | 13.41    | 15.05   
+mt-bench      | 32          | 93.73    | 64.51    | 157.30   | 157.55   | 8.03     | 7.22     | 13.37    | 13.80   
+alpaca        | 32          | 50.55    | 53.27    | 73.48    | 88.68    | 9.63     | 9.77     | 13.80    | 17.41   
+arena-hard-v2 | 32          | 123.51   | 65.47    | 634.52   | 827.44   | 12.40    | 11.37    | 21.33    | 25.36   
+
+Saved incremental JSONL results to: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dflash-epoch1/20260925_100239_temp-1.0_max-512.jsonl

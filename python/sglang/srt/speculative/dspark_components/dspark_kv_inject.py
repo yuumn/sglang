@@ -1,4 +1,5 @@
-from typing import Optional
+from dataclasses import dataclass
+from typing import Any, Optional
 
 import torch
 
@@ -10,8 +11,15 @@ from sglang.kernels.ops.speculative.dspark.dspark_verify_window import (
     BuildCommitInjectLayout,
     build_unified_commit_inject_layout,
 )
+from sglang.srt.environ import envs
 from sglang.srt.managers.schedule_batch import ScheduleBatch
 from sglang.srt.speculative.ragged_verify import RaggedVerifyLayout
+
+
+@dataclass
+class PreparedTargetHiddenKv:
+    payload: Any
+    stream: torch.cuda.Stream
 
 
 class TargetHiddenKvInjector:
@@ -31,6 +39,40 @@ class TargetHiddenKvInjector:
         self.device = device
         self.verify_num_draft_tokens = verify_num_draft_tokens
         self._block_pos_offsets = block_pos_offsets
+        self._projection_stream: Optional[torch.cuda.Stream] = None
+
+    def prepare_target_hidden(
+        self, target_hidden: Optional[torch.Tensor]
+    ) -> Optional[PreparedTargetHiddenKv]:
+        """Start target-hidden projection while sampling acceptance runs."""
+        if (
+            target_hidden is None
+            or target_hidden.numel() == 0
+            or not envs.SGLANG_DSPARK_OVERLAP_TARGET_HIDDEN_KV.get()
+            or not target_hidden.is_cuda
+            or not hasattr(self.draft_model, "prepare_target_hidden_kv")
+            or not hasattr(self.draft_model, "write_prepared_target_hidden_kv")
+        ):
+            return None
+        pool = self.draft_model_runner.token_to_kv_pool
+        if hasattr(pool, "set_swa_key_buffer_radix_fused_norm_rope"):
+            return None
+        if self._projection_stream is None:
+            self._projection_stream = torch.cuda.Stream(device=target_hidden.device)
+        current_stream = torch.cuda.current_stream(target_hidden.device)
+        self._projection_stream.wait_stream(current_stream)
+        target_hidden.record_stream(self._projection_stream)
+        with torch.cuda.stream(self._projection_stream), torch.inference_mode():
+            payload = self.draft_model.prepare_target_hidden_kv(
+                target_hidden=target_hidden,
+                pool=pool,
+            )
+        if payload is None:
+            return None
+        return PreparedTargetHiddenKv(
+            payload=payload,
+            stream=self._projection_stream,
+        )
 
     def inject_target_hidden(
         self,
@@ -42,6 +84,7 @@ class TargetHiddenKvInjector:
         commit_lens: Optional[torch.Tensor] = None,
         state_slot: Optional[torch.Tensor] = None,
         final_pos: Optional[torch.Tensor] = None,
+        prepared: Optional[PreparedTargetHiddenKv] = None,
     ) -> None:
         if target_hidden is None or target_hidden.numel() == 0:
             return
@@ -70,6 +113,20 @@ class TargetHiddenKvInjector:
             )
 
         pool = self.draft_model_runner.token_to_kv_pool
+        if prepared is not None:
+            current_stream = torch.cuda.current_stream(device)
+            current_stream.wait_stream(prepared.stream)
+            kv_all = prepared.payload[0]
+            kv_all.record_stream(current_stream)
+            with torch.inference_mode():
+                self.draft_model.write_prepared_target_hidden_kv(
+                    prepared=prepared.payload,
+                    positions=positions,
+                    cache_loc=cache_loc,
+                    cache_loc_2d=cache_loc_2d,
+                    commit_lens=commit_lens,
+                )
+            return
         if hasattr(pool, "set_swa_key_buffer_radix_fused_norm_rope"):
             self._inject_mla(
                 pool=pool,

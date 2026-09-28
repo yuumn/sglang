@@ -610,6 +610,77 @@ def _handle_dspark(server_args: ServerArgs) -> None:
         )
 
 
+def _handle_dspark_latentspec(server_args: ServerArgs) -> None:
+    """Resolve DSpark scheduling while preserving the trained LatentSpec layout."""
+
+    _handle_dspark(server_args)
+    cfg = resolving_view(server_args)
+
+    if not cfg.device.startswith("cuda"):
+        raise ValueError("DSPARK_LATENTSPEC currently requires a CUDA device.")
+    if int(cfg.tp_size) != 1 or int(cfg.dp_size) != 1:
+        raise ValueError(
+            "DSPARK_LATENTSPEC currently requires --tp-size 1 and --dp-size 1; "
+            f"got tp_size={cfg.tp_size}, dp_size={cfg.dp_size}."
+        )
+    if resolved_view(server_args).enable_dp_attention:
+        raise ValueError("DSPARK_LATENTSPEC does not yet support --enable-dp-attention.")
+
+    from sglang.srt.speculative.dspark_components.dspark_config import (
+        get_dspark_sample_from_anchor,
+    )
+    from sglang.srt.utils.hf_transformers_utils import get_config
+
+    draft_hf_config = get_config(
+        cfg.speculative_draft_model_path,
+        trust_remote_code=cfg.trust_remote_code,
+        revision=cfg.speculative_draft_model_revision,
+        model_override_args=json.loads(cfg.json_model_override_args),
+    )
+    draft_text_config = (
+        getattr(draft_hf_config, "text_config", None) or draft_hf_config
+    )
+    architectures = getattr(draft_hf_config, "architectures", None) or []
+    if "Qwen3MySpecModel" not in architectures:
+        raise ValueError(
+            "DSPARK_LATENTSPEC requires a Qwen3MySpecModel draft checkpoint; "
+            f"got architectures={architectures!r}."
+        )
+
+    def _field(name):
+        if isinstance(draft_text_config, dict):
+            return draft_text_config.get(name)
+        return getattr(draft_text_config, name, None)
+
+    num_latent_tokens = _field("num_latent_tokens")
+    num_latent_layers = _field("num_latent_layers")
+    latent_token_id = _field("latent_token_id")
+    if num_latent_tokens is None or int(num_latent_tokens) <= 0:
+        raise ValueError(
+            "DSPARK_LATENTSPEC draft config must define a positive "
+            f"num_latent_tokens, got {num_latent_tokens!r}."
+        )
+    if num_latent_layers is None or int(num_latent_layers) <= 0:
+        raise ValueError(
+            "DSPARK_LATENTSPEC draft config must define a positive "
+            f"num_latent_layers, got {num_latent_layers!r}."
+        )
+    if latent_token_id is None or int(latent_token_id) < 0:
+        raise ValueError(
+            "DSPARK_LATENTSPEC draft config must define a non-negative "
+            f"latent_token_id, got {latent_token_id!r}."
+        )
+    if not get_dspark_sample_from_anchor(draft_hf_config):
+        raise ValueError(
+            "DSPARK_LATENTSPEC requires sample_from_anchor=true because every "
+            "trained proposal block contains the anchor row."
+        )
+
+    # LatentSpec's two attention stages use dedicated Triton metadata. Resolve
+    # this after the DSpark fields so ModelRunner sees the final backend.
+    _resolve_dflash_draft_attention_backend(server_args)
+
+
 def _resolve_dflash_draft_attention_backend(server_args: ServerArgs) -> None:
     """Resolve `speculative_draft_attention_backend` to a final, supported value.
 
@@ -630,11 +701,15 @@ def _resolve_dflash_draft_attention_backend(server_args: ServerArgs) -> None:
     fallback_backend = "triton" if get_platform().is_hip else "flashinfer"
 
     draft_backend = cfg.speculative_draft_attention_backend
-    if cfg.speculative_algorithm == "LATENTSPEC" and draft_backend != "triton":
+    if cfg.speculative_algorithm in (
+        "LATENTSPEC",
+        "DSPARK_LATENTSPEC",
+    ) and draft_backend != "triton":
         if draft_backend is not None:
             logger.warning(
-                "LATENTSPEC batched draft attention requires its two-stage "
+                "%s batched draft attention requires its two-stage "
                 "metadata; overriding draft attention backend %r with 'triton'.",
+                cfg.speculative_algorithm,
                 draft_backend,
             )
         draft_backend = "triton"

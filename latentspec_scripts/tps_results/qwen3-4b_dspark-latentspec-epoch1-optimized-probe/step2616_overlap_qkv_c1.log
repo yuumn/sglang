@@ -1,0 +1,39 @@
+Server: http://127.0.0.1:30000
+Model: qwen3-4b-dspark_latentspec
+Datasets: math500, aime25
+Incremental JSONL output: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized-probe/step2616_overlap_qkv_c1.jsonl
+Starting 32 warmup requests with concurrency 16...
+Warmup completed in 4.44s: 32/32 succeeded.
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=1, requests=50...
+Completed dataset=math500, concurrency=1: including_first_token(time=22.1483s, tps=938.76), excluding_first_token(time=20.7101s, tps=1001.54), successful=50/50
+  TTFT(ms): avg=28.76, p50=27.64, p95=36.04, p99=40.07
+  TPOT(ms): avg=0.97, p50=0.93, p95=1.28, p99=1.56
+Incrementally saved dataset=math500, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized-probe/step2616_overlap_qkv_c1.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=1, requests=30...
+Completed dataset=aime25, concurrency=1: including_first_token(time=19.5615s, tps=785.22), excluding_first_token(time=18.5522s, tps=826.32), successful=30/30
+  TTFT(ms): avg=33.64, p50=29.06, p95=56.05, p99=63.08
+  TPOT(ms): avg=1.21, p50=1.14, p95=1.59, p99=1.65
+Incrementally saved dataset=aime25, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized-probe/step2616_overlap_qkv_c1.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+
+Aggregate TPS including first-token latency (tokens/s)
+dataset | c=1   
+--------+-------
+math500 | 938.76
+aime25  | 785.22
+
+Aggregate decode TPS excluding first-token latency (tokens/s)
+dataset | c=1    
+--------+--------
+math500 | 1001.54
+aime25  | 826.32 
+
+Latency distribution (ms)
+dataset | concurrency | TTFT avg | TTFT p50 | TTFT p95 | TTFT p99 | TPOT avg | TPOT p50 | TPOT p95 | TPOT p99
+--------+-------------+----------+----------+----------+----------+----------+----------+----------+---------
+math500 | 1           | 28.76    | 27.64    | 36.04    | 40.07    | 0.97     | 0.93     | 1.28     | 1.56    
+aime25  | 1           | 33.64    | 29.06    | 56.05    | 63.08    | 1.21     | 1.14     | 1.59     | 1.65    
+
+Saved incremental JSONL results to: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized-probe/step2616_overlap_qkv_c1.jsonl

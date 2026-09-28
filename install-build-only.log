@@ -1,0 +1,300 @@
+Using Python 3.12.3 environment at: .sglangenv_07
+Resolved 1 package in 19.72s
+   Building sglang @ file:///mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python
+error: Failed to build `sglang @ file:///mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python`
+  cause: The build backend returned an error
+  cause: Call to `setuptools.build_meta.build_editable` failed (exit status: 1)
+
+         [stdout]
+         running editable_wheel
+         creating /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info
+         writing /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/PKG-INFO
+         writing dependency_links to /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/dependency_links.txt
+         writing entry points to /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/entry_points.txt
+         writing requirements to /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/requires.txt
+         writing top-level names to /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/top_level.txt
+         writing manifest file '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/SOURCES.txt'
+         reading manifest template 'MANIFEST.in'
+         writing manifest file '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang.egg-info/SOURCES.txt'
+         creating '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang-0.0.0.dev17574+g0bcd82237.d20260919.dist-info'
+         creating /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpcF7xdE/.tmp-335kntej/sglang-0.0.0.dev17574+g0bcd82237.d20260919.dist-info/WHEEL
+         running build_py
+         running build_ext
+         running build_rust
+         Copying rust artifact from /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/libmem_cache.so to sglang/srt/mem_cache/rust_tree_core/mem_cache.cpython-312-x86_64-linux-gnu.so
+
+         [stderr]
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/.sglangenv_07/lib/python3.12/site-packages/setuptools/config/expand.py:126: SetuptoolsWarning: File '/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python/README.md' cannot be found
+           return '\n'.join(
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/.sglangenv_07/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82: SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+         !!
+
+                 ********************************************************************************
+                 Please use a simple string containing a SPDX expression for `project.license`. You can also use `project.license-files`. (Both options available on setuptools>=77.0.0).
+
+                 By 2027-Feb-18, you need to update your project and remove deprecated calls
+                 or your builds will no longer be supported.
+
+                 See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+                 ********************************************************************************
+
+         !!
+           corresp(dist, value, root_dir)
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/.sglangenv_07/lib/python3.12/site-packages/setuptools/config/expand.py:126: SetuptoolsWarning: File '/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python/LICENSE' cannot be found
+           return '\n'.join(
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/.sglangenv_07/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:61: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+         !!
+
+                 ********************************************************************************
+                 Please consider removing the following classifiers in favor of a SPDX license expression:
+
+                 License :: OSI Approved :: Apache Software License
+
+                 See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+                 ********************************************************************************
+
+         !!
+           dist._finalize_license_expression()
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/.sglangenv_07/lib/python3.12/site-packages/setuptools/dist.py:765: SetuptoolsDeprecationWarning: License classifiers are deprecated.
+         !!
+
+                 ********************************************************************************
+                 Please consider removing the following classifiers in favor of a SPDX license expression:
+
+                 License :: OSI Approved :: Apache Software License
+
+                 See https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license for details.
+                 ********************************************************************************
+
+         !!
+           self._finalize_license_expression()
+         /home/hadoop-friday-llm/.cache/uv/archive-v0/ipcLAU9SXPvjX8um/torch/_subclasses/functional_tensor.py:368: UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered internally at /__w/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+           cpu = _conversion_method_template(device=torch.device("cpu"))
+         cargo rustc --lib --message-format=json-render-diagnostics --manifest-path ../rust/mem-cache/Cargo.toml --release -v --features pyo3/extension-module python-extension --locked --crate-type cdylib
+                Fresh version_check v0.9.5
+                Fresh find-msvc-tools v0.1.11
+                Fresh shlex v2.0.1
+                Fresh pkg-config v0.3.34
+                Fresh unicode-ident v1.0.24
+                Fresh autocfg v1.5.1
+                Fresh typenum v1.20.1
+                Fresh cfg-if v1.0.4
+                Fresh libc v0.2.189
+                Fresh subtle v2.6.1
+                Fresh cpufeatures v0.2.17
+                Fresh jobserver v0.1.35
+                Fresh proc-macro2 v1.0.107
+                Fresh target-lexicon v0.12.16
+                Fresh getrandom v0.2.17
+                Fresh simd-adler32 v0.3.10
+                Fresh adler2 v2.0.1
+                Fresh cc v1.4.4
+                Fresh quote v1.0.47
+                Fresh generic-array v0.14.7
+                Fresh rand_core v0.6.4
+                Fresh anyhow v1.0.104
+                Fresh serde_core v1.0.229
+                Fresh num-traits v0.2.19
+                Fresh base64ct v1.8.3
+                Fresh crc32fast v1.5.1
+                Fresh miniz_oxide v0.9.1
+                Fresh memchr v2.8.3
+                Fresh itoa v1.0.18
+                Fresh deranged v0.5.8
+                Fresh syn v2.0.119
+                Fresh crypto-common v0.1.7
+                Fresh block-buffer v0.10.4
+                Fresh inout v0.1.4
+                Fresh syn v3.0.4
+                Fresh zmij v1.0.23
+                Fresh password-hash v0.4.2
+                Fresh num-conv v0.2.2
+                Fresh powerfmt v0.2.0
+                Fresh time-core v0.1.9
+                Fresh rawpointer v0.2.1
+                Fresh heck v0.5.0
+                Fresh num-complex v0.4.6
+                Fresh pyo3-build-config v0.22.6
+                Fresh digest v0.10.7
+                Fresh zerocopy-derive v0.8.56
+                Fresh cipher v0.4.4
+                Fresh serde_derive v1.0.229
+                Fresh time v0.3.55
+                Fresh thiserror-impl v1.0.69
+                Fresh matrixmultiply v0.3.11
+                Fresh serde_json v1.0.151
+                Fresh num-integer v0.1.47
+                Fresh flate2 v1.1.10
+                Fresh byteorder v1.5.0
+                Fresh zerocopy v0.8.56
+                Fresh zstd-sys v2.0.16+zstd.1.5.7
+                Fresh hmac v0.12.1
+                Fresh bzip2-sys v0.1.13+1.0.8
+                Fresh sha2 v0.10.9
+                Fresh serde v1.0.229
+                Fresh aes v0.8.4
+                Fresh sha1 v0.10.7
+                Fresh constant_time_eq v0.1.5
+                Fresh ndarray v0.16.1
+                Fresh zstd-safe v5.0.2+zstd.1.5.2
+                Fresh ppv-lite86 v0.2.21
+                Fresh pbkdf2 v0.11.0
+                Fresh bzip2 v0.4.4
+                Fresh half v2.7.1
+                Fresh safetensors v0.3.3
+                Fresh memoffset v0.9.1
+                Fresh thiserror v1.0.69
+                Fresh lazy_static v1.5.0
+                Fresh allocator-api2 v0.2.21
+                Fresh foldhash v0.2.0
+                Fresh equivalent v1.0.2
+                Fresh unindent v0.2.4
+                Fresh once_cell v1.21.4
+                Fresh indoc v2.0.7
+                Fresh zstd v0.11.2+zstd.1.5.2
+                Fresh pyo3-macros-backend v0.22.6
+                Fresh rand_chacha v0.3.1
+                Fresh pyo3-ffi v0.22.6
+                Fresh hashbrown v0.16.1
+                Fresh zip v0.6.6
+                Fresh rand v0.8.8
+                Fresh pyo3-macros v0.22.6
+                Fresh pyo3 v0.22.6
+                Dirty torch-sys v0.24.0: the env variable LIBTORCH_USE_PYTORCH changed
+            Compiling torch-sys v0.24.0
+              Running `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-b59928e704a95113/build-script-build`
+                Dirty tch v0.24.0: info of dependency `torch-sys` changed
+            Compiling tch v0.24.0
+              Running `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name torch_sys --edition=2021 /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/torch-sys-0.24.0/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C embed-bitcode=no --cfg 'feature="python-extension"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("doc-only", "download-libtorch", "python-extension", "serde", "serde_json", "ureq"))' -C metadata=a56211d43c45e512 -C extra-filename=-b3f503aa4890f978 --out-dir /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps -C strip=debuginfo -L dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps --extern libc=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/liblibc-95640403b9be6b73.rmeta --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib' -L native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out -L native=/home/hadoop-friday-llm/.cache/uv/archive-v0/ipcLAU9SXPvjX8um/torch/lib -l static=tch -l stdc++ -l static=tch -l torch_cuda -l torch_python -l torch_cpu -l torch -l c10 -l gomp`
+              Running `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/tch-19a4848abef1ea56/build-script-build`
+              Running `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name tch --edition=2021 /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/tch-0.24.0/src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C embed-bitcode=no --cfg 'feature="python-extension"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("clap", "cpython", "cuda-tests", "doc-only", "download-libtorch", "image", "memmap2", "python-extension", "regex", "rl-python", "serde_json"))' -C metadata=05a20e706b43b278 -C extra-filename=-073292ba8ffac9c7 --out-dir /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps -C strip=debuginfo -L dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps --extern half=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libhalf-e38439e81e41be44.rmeta --extern lazy_static=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/liblazy_static-e65b7af75ee6fab6.rmeta --extern libc=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/liblibc-95640403b9be6b73.rmeta --extern ndarray=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libndarray-7e47099f45b36f50.rmeta --extern rand=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/librand-d8c543506fc7802d.rmeta --extern safetensors=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsafetensors-4f1ebf30a8034768.rmeta --extern thiserror=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libthiserror-b7473eee7dc45b56.rmeta --extern torch_sys=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libtorch_sys-b3f503aa4890f978.rmeta --extern zip=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libzip-24acb37964eecaf9.rmeta --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib' -L native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out -L native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/zstd-sys-c321ef942c678c6b/out -L native=/home/hadoop-friday-llm/.cache/uv/archive-v0/ipcLAU9SXPvjX8um/torch/lib -L native=/usr/lib64 -C link-arg=-Wl,-rpath=/home/hadoop-friday-llm/.cache/uv/archive-v0/ipcLAU9SXPvjX8um/torch/lib -C link-arg=-Wl,--no-as-needed -C link-arg=-ltorch`
+                Dirty mem_cache v0.1.0 (/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache): info of dependency `pyo3` changed
+            Compiling mem_cache v0.1.0 (/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache)
+              Running `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc --crate-name mem_cache --edition=2024 src/lib.rs --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type cdylib --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --cfg 'feature="default"' --cfg 'feature="python-extension"' --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default", "inspection", "python-extension"))' -C metadata=86f70dc0a1e47f4f --out-dir /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps -C strip=debuginfo -L dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps --extern hashbrown=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libhashbrown-bed75ef4492bb88e.rlib --extern pyo3=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3-9131c9a759dcc4c4.rlib --extern sha2=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsha2-8a27e7ecd62c177d.rlib --extern tch=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libtch-073292ba8ffac9c7.rlib --extern thiserror=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libthiserror-b7473eee7dc45b56.rlib -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib' -L native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out -L native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/zstd-sys-c321ef942c678c6b/out -L native=/home/hadoop-friday-llm/.cache/uv/archive-v0/ipcLAU9SXPvjX8um/torch/lib -L native=/usr/lib64`
+             Finished `release` profile [optimized] target(s) in 1m 25s
+             Updating crates.io index
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (3 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (2 tries remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         warning: spurious network error (1 try remaining): transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         error: failed to get `async-stream` as a dependency of package `sglang-grpc v0.1.0 (/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/sglang-grpc)`
+
+         Caused by:
+           failed to load source for dependency `async-stream`
+
+         Caused by:
+           unable to update registry `crates-io`
+
+         Caused by:
+           download of as/yn/async-stream failed
+
+         Caused by:
+           transfer too slow: failed to transfer more than 10 bytes in 30s (transferred 0 bytes)
+         error: `cargo metadata --manifest-path ../rust/sglang-grpc/Cargo.toml --format-version 1 --locked` failed with code 101
+         -- Output captured from stdout:
+
+hint: Build failures usually indicate a problem with the package or the build environment

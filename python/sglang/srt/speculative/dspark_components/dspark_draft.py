@@ -211,6 +211,7 @@ class DraftBlockProposer:
         draft_block_spec_info,
         tp_sync: SpecTpSync,
         dp_moe_sync: bool = False,
+        spec_algorithm=SpeculativeAlgorithm.DSPARK,
     ) -> None:
         self.draft_model = draft_model
         self.draft_model_runner = draft_model_runner
@@ -220,6 +221,7 @@ class DraftBlockProposer:
         self._mask_token_id = mask_token_id
         self._draft_block_spec_info = draft_block_spec_info
         self._tp_sync = tp_sync
+        self._spec_algorithm = spec_algorithm
         self._draft_sampler = None
         self._dp_moe_sync = dp_moe_sync
         # Persistent (bs, gamma) mask-token buffer: only column 0 (the bonus
@@ -353,7 +355,7 @@ class DraftBlockProposer:
             seq_lens_sum=0,
             seq_lens_cpu=torch.empty((0,), dtype=torch.int64),
             positions=empty_long,
-            spec_algorithm=SpeculativeAlgorithm.DSPARK,
+            spec_algorithm=self._spec_algorithm,
             spec_info=self._draft_block_spec_info,
             capture_hidden_mode=CaptureHiddenMode.NULL,
         )
@@ -423,7 +425,7 @@ class DraftBlockProposer:
             seq_lens_cpu=draft_seq_lens_cpu,
             positions=draft_positions,
             input_embeds=draft_input_embeds,
-            spec_algorithm=SpeculativeAlgorithm.DSPARK,
+            spec_algorithm=self._spec_algorithm,
             spec_info=self._draft_block_spec_info,
             capture_hidden_mode=CaptureHiddenMode.NULL,
             num_token_non_padded=_make_num_token_non_padded(draft_num_tokens, device),

@@ -47,6 +47,20 @@ class TestFromString(_RegistryIsolated):
             SpeculativeAlgorithm.LATENTSPEC,
         )
         self.assertTrue(SpeculativeAlgorithm.LATENTSPEC.is_dflash_family())
+        self.assertIs(
+            SpeculativeAlgorithm.from_string("DSPARK_LATENTSPEC"),
+            SpeculativeAlgorithm.DSPARK_LATENTSPEC,
+        )
+        self.assertTrue(SpeculativeAlgorithm.DSPARK_LATENTSPEC.is_dspark())
+        self.assertTrue(SpeculativeAlgorithm.DSPARK_LATENTSPEC.is_latentspec())
+        self.assertTrue(SpeculativeAlgorithm.DSPARK_LATENTSPEC.is_dflash_family())
+        self.assertTrue(SpeculativeAlgorithm.DSPARK_LATENTSPEC.supports_ragged_verify())
+        self.assertEqual(
+            SpeculativeAlgorithm.DSPARK_LATENTSPEC.get_num_tokens_per_req_for_target_verify(
+                8, is_draft_worker=True
+            ),
+            7,
+        )
 
     def test_builtin_name_is_case_insensitive(self):
         self.assertIs(

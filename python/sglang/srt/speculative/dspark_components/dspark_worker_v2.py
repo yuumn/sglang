@@ -69,6 +69,7 @@ from sglang.srt.speculative.dspark_components.dspark_verify import (
     TargetVerifyExecutor,
     verify_logits_adjustments_are_noop,
 )
+from sglang.srt.speculative.spec_info import SpeculativeAlgorithm
 from sglang.srt.speculative.spec_tp_sync import SpecTpSync, SpecTpSyncSite
 from sglang.srt.speculative.spec_utils import (
     GrammarTree,
@@ -266,6 +267,9 @@ class DSparkWorkerV2(BaseSpecWorker):
             draft_block_spec_info=self._draft_block_spec_info,
             tp_sync=self._tp_sync,
             dp_moe_sync=self._draft_is_moe and get_parallel().enable_dp_attention,
+            spec_algorithm=SpeculativeAlgorithm.from_string(
+                get_spec().speculative_algorithm
+            ),
         )
         self._verify_epilogue = None
         if (
@@ -432,7 +436,7 @@ class DSparkWorkerV2(BaseSpecWorker):
             available_memory_gb=available_memory_gb,
             confidence_fn=(
                 self._verify_planner.compute_confidence_tensor
-                if self._verify_planner.carries_confidence
+                if self._verify_planner.needs_confidence
                 else None
             ),
             out=(
@@ -656,7 +660,7 @@ class DSparkWorkerV2(BaseSpecWorker):
         draft_tokens = draft_block.draft_tokens
 
         confidence = proposal.confidence
-        if confidence is None:
+        if confidence is None and self._verify_planner.needs_confidence:
             confidence = self._verify_planner.compute_confidence_tensor(
                 draft_hidden=proposal.draft_hidden,
                 anchor_tokens=draft_block_ids[:, 0],
@@ -735,6 +739,11 @@ class DSparkWorkerV2(BaseSpecWorker):
                 hidden_strided = None
         logits_output = target_verify.logits_output
         can_run_cuda_graph = target_verify.can_run_cuda_graph
+        prepared_target_hidden_kv = (
+            None
+            if run_compact
+            else self._kv_injector.prepare_target_hidden(logits_output.hidden_states)
+        )
         if batch.has_grammar:
             # run_compact scatters its rows back to (bs * chain_len), so the mask
             # lines up with the logits on both verify paths.
@@ -771,7 +780,7 @@ class DSparkWorkerV2(BaseSpecWorker):
             )
 
         if on_publish is not None:
-            if confidence is not None:
+            if confidence is not None and self._verify_planner.schedules_verify_budget:
                 on_publish(accept.new_seq_lens, confidence=confidence)
             else:
                 on_publish(accept.new_seq_lens)
@@ -794,6 +803,7 @@ class DSparkWorkerV2(BaseSpecWorker):
                 commit_lens=accept.commit_lens,
                 bs=bs,
                 run_compact=run_compact,
+                prepared_target_hidden_kv=prepared_target_hidden_kv,
             )
         logits_output.hidden_states = None
 

@@ -38,6 +38,7 @@ class SpeculativeAlgorithm(Enum):
 
     DFLASH = auto()
     DSPARK = auto()
+    DSPARK_LATENTSPEC = auto()
     EAGLE = auto()
     EAGLE3 = auto()
     FROZEN_KV_MTP = auto()
@@ -116,10 +117,16 @@ class SpeculativeAlgorithm(Enum):
         return self == SpeculativeAlgorithm.DFLASH
 
     def is_dspark(self) -> bool:
-        return self == SpeculativeAlgorithm.DSPARK
+        return self in (
+            SpeculativeAlgorithm.DSPARK,
+            SpeculativeAlgorithm.DSPARK_LATENTSPEC,
+        )
 
     def is_latentspec(self) -> bool:
-        return self == SpeculativeAlgorithm.LATENTSPEC
+        return self in (
+            SpeculativeAlgorithm.LATENTSPEC,
+            SpeculativeAlgorithm.DSPARK_LATENTSPEC,
+        )
 
     def is_dflash_family(self) -> bool:
         return self.is_dflash() or self.is_dspark() or self.is_latentspec()
@@ -144,6 +151,7 @@ class SpeculativeAlgorithm(Enum):
             SpeculativeAlgorithm.EAGLE3,
             SpeculativeAlgorithm.DFLASH,
             SpeculativeAlgorithm.DSPARK,
+            SpeculativeAlgorithm.DSPARK_LATENTSPEC,
             SpeculativeAlgorithm.LATENTSPEC,
         )
 
@@ -222,6 +230,7 @@ class SpeculativeAlgorithm(Enum):
         from sglang.srt.arg_groups.speculative_hook import (
             _handle_dflash,
             _handle_dspark,
+            _handle_dspark_latentspec,
             _handle_eagle_family,
             _handle_frozen_kv_mtp,
             _handle_ngram,
@@ -233,7 +242,9 @@ class SpeculativeAlgorithm(Enum):
 
         read_ragged_verify_mode()
 
-        if self.is_dflash() or self.is_latentspec():
+        if self == SpeculativeAlgorithm.DSPARK_LATENTSPEC:
+            _handle_dspark_latentspec(server_args)
+        elif self.is_dflash() or self.is_latentspec():
             _handle_dflash(server_args)
         elif self.is_dspark():
             _handle_dspark(server_args)
@@ -325,6 +336,13 @@ class SpeculativeAlgorithm(Enum):
             from sglang.srt.speculative.dflash_worker_v2 import DFlashWorkerV2
 
             return DFlashWorkerV2
+
+        if self == SpeculativeAlgorithm.DSPARK_LATENTSPEC:
+            from sglang.srt.speculative.latentspec_worker_v2 import (
+                DSparkLatentSpecWorkerV2,
+            )
+
+            return DSparkLatentSpecWorkerV2
 
         if self.is_dspark():
             from sglang.srt.speculative.dspark_components.dspark_worker_v2 import (

@@ -324,6 +324,7 @@ class TargetVerifyExecutor:
         commit_lens: torch.Tensor,
         bs: int,
         run_compact: bool,
+        prepared_target_hidden_kv=None,
     ) -> None:
         if run_compact:
             self.kv_injector.inject_ragged(
@@ -355,6 +356,7 @@ class TargetVerifyExecutor:
             positions=verify_window.positions_2d.reshape(-1),
             commit_lens=commit_lens,
             state_slot=state_slot,
+            prepared=prepared_target_hidden_kv,
         )
 
     def _run_ragged(

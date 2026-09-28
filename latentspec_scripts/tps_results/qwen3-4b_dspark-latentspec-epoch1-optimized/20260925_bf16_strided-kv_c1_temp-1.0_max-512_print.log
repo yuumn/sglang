@@ -1,0 +1,39 @@
+Server: http://127.0.0.1:30000
+Model: qwen3-4b-dspark_latentspec
+Datasets: math500, aime25
+Incremental JSONL output: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized/20260925_bf16_strided-kv_c1_temp-1.0_max-512.jsonl
+Starting 32 warmup requests with concurrency 16...
+Warmup completed in 4.19s: 32/32 succeeded.
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=math500, concurrency=1, requests=500...
+Completed dataset=math500, concurrency=1: including_first_token(time=224.7274s, tps=972.45), excluding_first_token(time=215.9941s, tps=1009.45), successful=500/500
+  TTFT(ms): avg=17.47, p50=16.21, p95=24.02, p99=32.29
+  TPOT(ms): avg=0.97, p50=0.94, p95=1.32, p99=1.57
+Incrementally saved dataset=math500, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized/20260925_bf16_strided-kv_c1_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+Testing dataset=aime25, concurrency=1, requests=30...
+Completed dataset=aime25, concurrency=1: including_first_token(time=19.0819s, tps=804.95), excluding_first_token(time=18.3852s, tps=833.82), successful=30/30
+  TTFT(ms): avg=23.22, p50=17.90, p95=49.18, p99=56.69
+  TPOT(ms): avg=1.20, p50=1.14, p95=1.64, p99=1.66
+Incrementally saved dataset=aime25, concurrency=1 to /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized/20260925_bf16_strided-kv_c1_temp-1.0_max-512.jsonl
+Flushed server cache: http://127.0.0.1:30000/flush_cache
+
+Aggregate TPS including first-token latency (tokens/s)
+dataset | c=1   
+--------+-------
+math500 | 972.45
+aime25  | 804.95
+
+Aggregate decode TPS excluding first-token latency (tokens/s)
+dataset | c=1    
+--------+--------
+math500 | 1009.45
+aime25  | 833.82 
+
+Latency distribution (ms)
+dataset | concurrency | TTFT avg | TTFT p50 | TTFT p95 | TTFT p99 | TPOT avg | TPOT p50 | TPOT p95 | TPOT p99
+--------+-------------+----------+----------+----------+----------+----------+----------+----------+---------
+math500 | 1           | 17.47    | 16.21    | 24.02    | 32.29    | 0.97     | 0.94     | 1.32     | 1.57    
+aime25  | 1           | 23.22    | 17.90    | 49.18    | 56.69    | 1.20     | 1.14     | 1.64     | 1.66    
+
+Saved incremental JSONL results to: /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/latentspec_scripts/tps_results/qwen3-4b_dspark-latentspec-epoch1-optimized/20260925_bf16_strided-kv_c1_temp-1.0_max-512.jsonl

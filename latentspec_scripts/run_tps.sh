@@ -24,8 +24,8 @@ python test_tps.py \
     --host 127.0.0.1 \
     --port $PORT \
     --dataset-dir "${SGLANG_DIR}/datasets" \
-    --datasets gsm8k math500 aime25 humaneval mbpp livecodebench mt-bench alpaca arena-hard-v2 \
-    --concurrencies 1 2 4 8 16 32 \
+    --datasets math500 aime25 \
+    --concurrencies 1 2 4 8 16 \
     --requests-per-dataset 0 \
     --warmup-requests 32 \
     --max-tokens $MAX_TOKEN \

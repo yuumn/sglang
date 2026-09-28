@@ -418,12 +418,12 @@ def fetch_server_context(
     info = response.json()
 
     speculative_algorithm = info.get("speculative_algorithm")
-    if speculative_algorithm != "DSPARK":
+    if speculative_algorithm not in ("DSPARK", "DSPARK_LATENTSPEC"):
         raise ValueError(
             f"Profile against a DSpark server: {base_url} reports "
             f"speculative_algorithm={speculative_algorithm!r}. The SPS table is "
-            "measured from real static-mode DSpark verify steps; relaunch with "
-            "--speculative-algorithm DSPARK and SGLANG_RAGGED_VERIFY_MODE=static."
+            "measured from real DSpark-family verify steps; relaunch with "
+            "--speculative-algorithm DSPARK or DSPARK_LATENTSPEC."
         )
     if info.get("disable_cuda_graph"):
         raise ValueError(

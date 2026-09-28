@@ -1,0 +1,690 @@
+info: downloading installer
+warn: it looks like you have an existing rustup settings file at:
+warn: /home/hadoop-friday-llm/.rustup/settings.toml
+info: profile set to minimal
+info: default host tuple is x86_64-unknown-linux-gnu
+warn: Updating existing toolchain, profile choice will be ignored
+info: syncing channel updates for stable-x86_64-unknown-linux-gnu
+info: default toolchain set to stable-x86_64-unknown-linux-gnu
+
+  stable-x86_64-unknown-linux-gnu unchanged - rustc 1.98.1 (48a229cea 2026-09-01)
+
+
+Rust is installed now. Great!
+
+To get started you may need to restart your current shell.
+This would reload your PATH environment variable to include
+Cargo's bin directory ($HOME/.cargo/bin).
+
+To configure your current shell, you need to source the
+corresponding env file under $HOME/.cargo.
+
+Consider running the right command for your shell (note the leading DOT):
+. "$HOME/.cargo/env" # For sh/ash/dash/pdksh/bash
+cargo:rerun-if-env-changed=CC_x86_64-unknown-linux-gnu
+CC_x86_64-unknown-linux-gnu = None
+cargo:rerun-if-env-changed=CC_x86_64_unknown_linux_gnu
+CC_x86_64_unknown_linux_gnu = None
+cargo:rerun-if-env-changed=HOST_CC
+HOST_CC = None
+cargo:rerun-if-env-changed=CC
+CC = None
+cargo:rerun-if-env-changed=CC_ENABLE_DEBUG_OUTPUT
+cargo:rerun-if-env-changed=CRATE_CC_NO_DEFAULTS
+CRATE_CC_NO_DEFAULTS = None
+cargo:rerun-if-env-changed=CFLAGS
+CFLAGS = None
+cargo:rerun-if-env-changed=HOST_CFLAGS
+HOST_CFLAGS = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64_unknown_linux_gnu
+CFLAGS_x86_64_unknown_linux_gnu = None
+cargo:rerun-if-env-changed=CFLAGS_x86_64-unknown-linux-gnu
+CFLAGS_x86_64-unknown-linux-gnu = None
+error: unexpected argument '--versio' found
+
+  tip: a similar argument exists: '--version'
+
+Usage: cargo [+toolchain] [OPTIONS] [COMMAND]
+       cargo [+toolchain] [OPTIONS] -Zscript <MANIFEST_RS> [ARGS]...
+
+For more information, try '--help'.
+Using Python 3.12.3 environment at: .sglangenv_07
+Resolved 205 packages in 49.41s
+   Building sglang @ file:///mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python
+Downloading grpcio (6.8MiB)
+Downloading lxml (5.0MiB)
+Downloading cryptography (4.5MiB)
+Downloading hf-xet (4.3MiB)
+Downloading uvloop (4.2MiB)
+Downloading tokenizers (3.1MiB)
+Downloading py-spy (2.8MiB)
+Downloading torch-memory-saver (2.5MiB)
+Downloading timm (2.4MiB)
+Downloading modelscope (5.8MiB)
+Downloading jedi (4.7MiB)
+Downloading cuda-core (6.3MiB)
+Downloading transformers (10.6MiB)
+Downloading sgl-deep-gemm (4.7MiB)
+Downloading nvidia-mathdx (21.9MiB)
+Downloading llvmlite (53.7MiB)
+Downloading tilelang (48.2MiB)
+Downloading numpy (15.8MiB)
+Downloading nvidia-cuda-nvrtc (50.8MiB)
+Downloading pandas (10.3MiB)
+Downloading openai-harmony (2.9MiB)
+Downloading nvidia-cudnn-frontend (7.0MiB)
+Downloading scipy (33.7MiB)
+Downloading pyarrow (47.8MiB)
+Downloading nvidia-cuda-runtime (2.4MiB)
+Downloading pillow (6.6MiB)
+Downloading nvidia-cutlass-dsl-libs-base (2.7MiB)
+Downloading numba (3.6MiB)
+Downloading nccl4py (3.4MiB)
+Downloading flashinfer-python (17.5MiB)
+Downloading tokenspeed-triton (77.9MiB)
+Downloading llguidance (3.0MiB)
+Downloading nvidia-cutlass-dsl-libs-cu12 (84.4MiB)
+Downloading sglang-kernel (359.6MiB)
+Downloading pycountry (7.7MiB)
+Downloading mistral-common (6.2MiB)
+Downloading nvidia-cuda-cccl (3.7MiB)
+Downloading xgrammar (42.6MiB)
+Downloading nvidia-cuda-nvdisasm (5.0MiB)
+Downloading nvidia-cutlass-dsl-libs-cu13 (84.0MiB)
+Downloading nvidia-nvvm (69.2MiB)
+Downloading apache-tvm-ffi (2.6MiB)
+Downloading zstandard (5.3MiB)
+Downloading sgl-deep-ep (14.6MiB)
+Downloading z3-solver (27.9MiB)
+Downloading nvidia-cuda-nvcc (45.5MiB)
+Downloading torchcodec (2.9MiB)
+Downloading pydantic-core (2.0MiB)
+Downloading pycryptodomex (2.2MiB)
+Downloading aiohttp (1.7MiB)
+error: Failed to build `sglang @
+       file:///mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python`
+  cause: The build backend returned an error
+  cause: Call to `setuptools.build_meta.build_editable` failed (exit status: 1)
+
+         [stdout]
+         running editable_wheel
+         creating
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info
+         writing
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/PKG-INFO
+         writing dependency_links to
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/dependency_links.txt
+         writing entry points to
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/entry_points.txt
+         writing requirements to
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/requires.txt
+         writing top-level names to
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/top_level.txt
+         writing manifest file
+         '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/SOURCES.txt'
+         reading manifest template 'MANIFEST.in'
+         writing manifest file
+         '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang.egg-info/SOURCES.txt'
+         creating
+         '/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang-0.0.0.dev17574+g0bcd82237.d20260919.dist-info'
+         creating
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpxiwjrS/.tmp-og8kvyep/sglang-0.0.0.dev17574+g0bcd82237.d20260919.dist-info/WHEEL
+         running build_py
+         running build_ext
+         running build_rust
+
+         [stderr]
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/setuptools/config/expand.py:126:
+         SetuptoolsWarning: File
+         '/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python/README.md'
+         cannot be found
+           return '\n'.join(
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:82:
+         SetuptoolsDeprecationWarning: `project.license` as a TOML table is deprecated
+         !!
+
+
+         ********************************************************************************
+                 Please use a simple string containing a SPDX expression for
+         `project.license`. You can also use `project.license-files`. (Both options
+         available on setuptools>=77.0.0).
+
+                 By 2027-Feb-18, you need to update your project and remove deprecated
+         calls
+                 or your builds will no longer be supported.
+
+                 See
+         https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+         for details.
+
+         ********************************************************************************
+
+         !!
+           corresp(dist, value, root_dir)
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/setuptools/config/expand.py:126:
+         SetuptoolsWarning: File
+         '/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/python/LICENSE'
+         cannot be found
+           return '\n'.join(
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/setuptools/config/_apply_pyprojecttoml.py:61:
+         SetuptoolsDeprecationWarning: License classifiers are deprecated.
+         !!
+
+
+         ********************************************************************************
+                 Please consider removing the following classifiers in favor of a SPDX
+         license expression:
+
+                 License :: OSI Approved :: Apache Software License
+
+                 See
+         https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+         for details.
+
+         ********************************************************************************
+
+         !!
+           dist._finalize_license_expression()
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/setuptools/dist.py:765:
+         SetuptoolsDeprecationWarning: License classifiers are deprecated.
+         !!
+
+
+         ********************************************************************************
+                 Please consider removing the following classifiers in favor of a SPDX
+         license expression:
+
+                 License :: OSI Approved :: Apache Software License
+
+                 See
+         https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#license
+         for details.
+
+         ********************************************************************************
+
+         !!
+           self._finalize_license_expression()
+         /home/hadoop-friday-llm/.cache/uv/builds-v0/.tmplpGLq0/lib/python3.12/site-packages/torch/_subclasses/functional_tensor.py:368:
+         UserWarning: Failed to initialize NumPy: No module named 'numpy' (Triggered
+         internally at /__w/pytorch/pytorch/torch/csrc/utils/tensor_numpy.cpp:84.)
+           cpu = _conversion_method_template(device=torch.device("cpu"))
+         cargo rustc --lib --message-format=json-render-diagnostics --manifest-path
+         ../rust/mem-cache/Cargo.toml --release -v --features pyo3/extension-module
+         python-extension --locked --crate-type cdylib
+                Fresh version_check v0.9.5
+                Fresh shlex v2.0.1
+                Fresh find-msvc-tools v0.1.11
+                Fresh pkg-config v0.3.34
+                Fresh unicode-ident v1.0.24
+                Fresh autocfg v1.5.1
+                Fresh typenum v1.20.1
+                Fresh cfg-if v1.0.4
+                Fresh libc v0.2.189
+                Fresh subtle v2.6.1
+                Fresh jobserver v0.1.35
+                Fresh proc-macro2 v1.0.107
+                Fresh target-lexicon v0.12.16
+                Fresh getrandom v0.2.17
+                Fresh cpufeatures v0.2.17
+                Fresh simd-adler32 v0.3.10
+                Fresh adler2 v2.0.1
+                Fresh cc v1.4.4
+                Fresh quote v1.0.47
+                Fresh generic-array v0.14.7
+                Fresh rand_core v0.6.4
+                Fresh anyhow v1.0.104
+                Fresh num-traits v0.2.19
+                Fresh serde_core v1.0.229
+                Fresh base64ct v1.8.3
+                Fresh miniz_oxide v0.9.1
+                Fresh crc32fast v1.5.1
+                Fresh powerfmt v0.2.0
+                Fresh num-conv v0.2.2
+                Fresh syn v2.0.119
+                Dirty pyo3-build-config v0.22.6: the env variable PYO3_PYTHON changed
+            Compiling pyo3-build-config v0.22.6
+                Fresh crypto-common v0.1.7
+                Fresh block-buffer v0.10.4
+                Fresh syn v3.0.4
+                Fresh inout v0.1.4
+                Fresh password-hash v0.4.2
+                Fresh zmij v1.0.23
+                Fresh deranged v0.5.8
+                Fresh itoa v1.0.18
+                Fresh heck v0.5.0
+                Fresh memchr v2.8.3
+                Fresh rawpointer v0.2.1
+                Fresh time-core v0.1.9
+                Fresh flate2 v1.1.10
+              Running
+         `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-build-config-74e860c5e0647098/build-script-build`
+                Fresh zerocopy-derive v0.8.56
+                Fresh digest v0.10.7
+                Fresh cipher v0.4.4
+                Fresh serde_derive v1.0.229
+                Fresh time v0.3.55
+                Fresh matrixmultiply v0.3.11
+                Fresh serde_json v1.0.151
+                Fresh thiserror-impl v1.0.69
+                Fresh num-complex v0.4.6
+                Fresh num-integer v0.1.47
+                Fresh byteorder v1.5.0
+                Fresh zerocopy v0.8.56
+                Fresh zstd-sys v2.0.16+zstd.1.5.7
+                Fresh sha2 v0.10.9
+                Fresh bzip2-sys v0.1.13+1.0.8
+                Fresh hmac v0.12.1
+                Fresh aes v0.8.4
+                Fresh sha1 v0.10.7
+                Fresh serde v1.0.229
+                Fresh constant_time_eq v0.1.5
+                Fresh thiserror v1.0.69
+                Fresh ndarray v0.16.1
+                Fresh memoffset v0.9.1
+                Fresh zstd-safe v5.0.2+zstd.1.5.2
+                Fresh ppv-lite86 v0.2.21
+                Fresh bzip2 v0.4.4
+                Fresh pbkdf2 v0.11.0
+                Fresh half v2.7.1
+                Fresh safetensors v0.3.3
+                Fresh equivalent v1.0.2
+                Fresh lazy_static v1.5.0
+                Fresh indoc v2.0.7
+                Fresh allocator-api2 v0.2.21
+                Fresh foldhash v0.2.0
+                Fresh once_cell v1.21.4
+                Fresh unindent v0.2.4
+                Fresh rand_chacha v0.3.1
+                Fresh zstd v0.11.2+zstd.1.5.2
+                Fresh hashbrown v0.16.1
+                Fresh zip v0.6.6
+                Fresh rand v0.8.8
+                Fresh torch-sys v0.24.0
+                Fresh tch v0.24.0
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name pyo3_build_config --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-build-config-0.22.6/src/lib.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no
+         -C debug-assertions=off --cfg 'feature="default"' --cfg
+         'feature="extension-module"' --cfg 'feature="resolve-config"' --check-cfg
+         'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("abi3", "abi3-py310",
+         "abi3-py311", "abi3-py312", "abi3-py37", "abi3-py38", "abi3-py39",
+         "default", "extension-module", "python3-dll-a", "resolve-config"))' -C
+         metadata=f7ddbbeb5b95662c -C extra-filename=-4aeb0a0709469774 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         once_cell=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libonce_cell-16f74fdfff97c74f.rmeta
+         --extern
+         target_lexicon=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libtarget_lexicon-3feda610e32c49b3.rmeta
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'`
+                Dirty pyo3-ffi v0.22.6: info of dependency `pyo3-build-config` changed
+            Compiling pyo3-ffi v0.22.6
+                Dirty pyo3-macros-backend v0.22.6: info of dependency `pyo3-build-config`
+         changed
+            Compiling pyo3-macros-backend v0.22.6
+                Dirty pyo3 v0.22.6: info of dependency `pyo3-build-config` changed
+            Compiling pyo3 v0.22.6
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name build_script_build --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-0.22.6/build.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type bin --emit=dep-info,link -C embed-bitcode=no --warn=rust_2018_idioms
+         '--warn=clippy::useless_transmute' '--warn=clippy::used_underscore_binding'
+         --warn=unused_lifetimes '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls' -C
+         debug-assertions=off --cfg 'feature="default"' --cfg 'feature="extension-module"'
+         --cfg 'feature="indoc"' --cfg 'feature="macros"' --cfg 'feature="pyo3-macros"'
+         --cfg 'feature="unindent"' --check-cfg 'cfg(docsrs,test)' --check-cfg
+         'cfg(feature, values("abi3", "abi3-py310", "abi3-py311", "abi3-py312",
+         "abi3-py37", "abi3-py38", "abi3-py39", "anyhow", "auto-initialize", "chrono",
+         "chrono-tz", "default", "either", "experimental-async", "experimental-inspect",
+         "extension-module", "eyre", "full", "generate-import-lib", "gil-refs",
+         "hashbrown", "indexmap", "indoc", "inventory", "macros", "multiple-pymethods",
+         "nightly", "num-bigint", "num-complex", "num-rational", "py-clone",
+         "pyo3-macros", "rust_decimal", "serde", "smallvec", "unindent"))' -C
+         metadata=dc9135914aa22e4a -C extra-filename=-a12a26c9f3a04674 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-a12a26c9f3a04674
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         pyo3_build_config=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_build_config-4aeb0a0709469774.rlib
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'`
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name build_script_build --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-macros-backend-0.22.6/build.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type bin --emit=dep-info,link -C embed-bitcode=no --warn=rust_2018_idioms
+         '--warn=clippy::useless_transmute' '--warn=clippy::used_underscore_binding'
+         --warn=unused_lifetimes '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls'
+         -C debug-assertions=off --check-cfg 'cfg(docsrs,test)' --check-cfg
+         'cfg(feature, values("experimental-async", "gil-refs"))' -C
+         metadata=b00a841749cfe567 -C extra-filename=-866c00446eb740d2 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-macros-backend-866c00446eb740d2
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         pyo3_build_config=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_build_config-4aeb0a0709469774.rlib
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'`
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name build_script_build --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-ffi-0.22.6/build.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type bin --emit=dep-info,link -C embed-bitcode=no --warn=rust_2018_idioms
+         '--warn=clippy::useless_transmute' '--warn=clippy::used_underscore_binding'
+         --warn=unused_lifetimes '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls' -C
+         debug-assertions=off --cfg 'feature="default"' --cfg 'feature="extension-module"'
+         --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("abi3",
+         "abi3-py310", "abi3-py311", "abi3-py312", "abi3-py37", "abi3-py38",
+         "abi3-py39", "default", "extension-module", "generate-import-lib"))' -C
+         metadata=1c7936a2c4a9fea0 -C extra-filename=-1200091e049501c7 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-ffi-1200091e049501c7
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         pyo3_build_config=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_build_config-4aeb0a0709469774.rlib
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'`
+              Running
+         `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-macros-backend-866c00446eb740d2/build-script-build`
+              Running
+         `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-ffi-1200091e049501c7/build-script-build`
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name pyo3_macros_backend --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-macros-backend-0.22.6/src/lib.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type lib --emit=dep-info,metadata,link -C embed-bitcode=no
+         --warn=rust_2018_idioms '--warn=clippy::useless_transmute'
+         '--warn=clippy::used_underscore_binding' --warn=unused_lifetimes
+         '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls'
+         -C debug-assertions=off --check-cfg 'cfg(docsrs,test)' --check-cfg
+         'cfg(feature, values("experimental-async", "gil-refs"))' -C
+         metadata=ad13b4774d466f1e -C extra-filename=-0f41bed0b9bbd235 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         heck=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libheck-8e961af2b62f7425.rmeta
+         --extern
+         proc_macro2=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libproc_macro2-d5b6280a7738d8d7.rmeta
+         --extern
+         pyo3_build_config=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_build_config-4aeb0a0709469774.rmeta
+         --extern
+         quote=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libquote-7dc38651cdd54d28.rmeta
+         --extern
+         syn=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsyn-b1347a0607f7d382.rmeta
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'
+         --cfg invalid_from_utf8_lint --cfg c_str_lit --cfg diagnostic_namespace
+         --check-cfg 'cfg(Py_LIMITED_API)' --check-cfg 'cfg(PyPy)' --check-cfg
+         'cfg(GraalPy)' --check-cfg 'cfg(py_sys_config, values("Py_DEBUG",
+         "Py_REF_DEBUG", "Py_TRACE_REFS", "COUNT_ALLOCS"))' --check-cfg
+         'cfg(invalid_from_utf8_lint)' --check-cfg 'cfg(pyo3_disable_reference_pool)'
+         --check-cfg 'cfg(pyo3_leak_on_drop_without_reference_pool)' --check-cfg
+         'cfg(diagnostic_namespace)' --check-cfg 'cfg(c_str_lit)' --check-cfg 'cfg(Py_3_7)'
+         --check-cfg 'cfg(Py_3_8)' --check-cfg 'cfg(Py_3_9)' --check-cfg 'cfg(Py_3_10)'
+         --check-cfg 'cfg(Py_3_11)' --check-cfg 'cfg(Py_3_12)' --check-cfg 'cfg(Py_3_13)'`
+              Running
+         `/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/pyo3-a12a26c9f3a04674/build-script-build`
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name pyo3_ffi --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-ffi-0.22.6/src/lib.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C
+         embed-bitcode=no --warn=rust_2018_idioms '--warn=clippy::useless_transmute'
+         '--warn=clippy::used_underscore_binding' --warn=unused_lifetimes
+         '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls'
+         --cfg 'feature="default"' --cfg 'feature="extension-module"'
+         --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("abi3",
+         "abi3-py310", "abi3-py311", "abi3-py312", "abi3-py37", "abi3-py38",
+         "abi3-py39", "default", "extension-module", "generate-import-lib"))' -C
+         metadata=f3171142c73699b0 -C extra-filename=-e99f3c08414a5113 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         libc=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/liblibc-95640403b9be6b73.rmeta
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'
+         --cfg Py_3_6 --cfg Py_3_7 --cfg Py_3_8 --cfg Py_3_9 --cfg Py_3_10 --cfg
+         Py_3_11 --cfg Py_3_12 --cfg invalid_from_utf8_lint --cfg c_str_lit
+         --cfg diagnostic_namespace --check-cfg 'cfg(Py_LIMITED_API)' --check-cfg
+         'cfg(PyPy)' --check-cfg 'cfg(GraalPy)' --check-cfg 'cfg(py_sys_config,
+         values("Py_DEBUG", "Py_REF_DEBUG", "Py_TRACE_REFS", "COUNT_ALLOCS"))' --check-cfg
+         'cfg(invalid_from_utf8_lint)' --check-cfg 'cfg(pyo3_disable_reference_pool)'
+         --check-cfg 'cfg(pyo3_leak_on_drop_without_reference_pool)' --check-cfg
+         'cfg(diagnostic_namespace)' --check-cfg 'cfg(c_str_lit)' --check-cfg 'cfg(Py_3_7)'
+         --check-cfg 'cfg(Py_3_8)' --check-cfg 'cfg(Py_3_9)' --check-cfg 'cfg(Py_3_10)'
+         --check-cfg 'cfg(Py_3_11)' --check-cfg 'cfg(Py_3_12)' --check-cfg 'cfg(Py_3_13)'`
+                Dirty pyo3-macros v0.22.6: info of dependency `pyo3-macros-backend` changed
+            Compiling pyo3-macros v0.22.6
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name pyo3_macros --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-macros-0.22.6/src/lib.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type proc-macro --emit=dep-info,link -C prefer-dynamic -C
+         embed-bitcode=no --warn=rust_2018_idioms '--warn=clippy::useless_transmute'
+         '--warn=clippy::used_underscore_binding' --warn=unused_lifetimes
+         '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls' -C
+         debug-assertions=off --check-cfg 'cfg(docsrs,test)' --check-cfg 'cfg(feature,
+         values("experimental-async", "gil-refs", "multiple-pymethods"))' -C
+         metadata=6824a111957ac609 -C extra-filename=-811c7ae8ef38dbe4 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         proc_macro2=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libproc_macro2-d5b6280a7738d8d7.rlib
+         --extern
+         pyo3_macros_backend=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_macros_backend-0f41bed0b9bbd235.rlib
+         --extern
+         quote=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libquote-7dc38651cdd54d28.rlib
+         --extern
+         syn=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsyn-b1347a0607f7d382.rlib
+         --extern proc_macro --cap-lints allow -C
+         'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'`
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name pyo3 --edition=2021
+         /home/hadoop-friday-llm/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/pyo3-0.22.6/src/lib.rs
+         --error-format=json --json=diagnostic-rendered-ansi,artifacts,future-incompat
+         --crate-type lib --emit=dep-info,metadata,link -C opt-level=3 -C
+         embed-bitcode=no --warn=rust_2018_idioms '--warn=clippy::useless_transmute'
+         '--warn=clippy::used_underscore_binding' --warn=unused_lifetimes
+         '--warn=clippy::unnecessary_wraps' '--warn=clippy::todo'
+         --warn=rust_2021_prelude_collisions '--warn=clippy::manual_ok_or'
+         '--warn=clippy::manual_assert' '--warn=clippy::let_unit_value'
+         --warn=invalid_doc_attributes '--warn=clippy::flat_map_option'
+         '--warn=clippy::filter_map_next' '--warn=clippy::explicit_iter_loop'
+         '--warn=clippy::explicit_into_iter_loop' --warn=elided_lifetimes_in_paths
+         '--warn=clippy::dbg_macro' '--warn=clippy::checked_conversions'
+         '--warn=rustdoc::broken_intra_doc_links' '--warn=rustdoc::bare_urls'
+         --cfg 'feature="default"' --cfg 'feature="extension-module"' --cfg
+         'feature="indoc"' --cfg 'feature="macros"' --cfg 'feature="pyo3-macros"'
+         --cfg 'feature="unindent"' --check-cfg 'cfg(docsrs,test)' --check-cfg
+         'cfg(feature, values("abi3", "abi3-py310", "abi3-py311", "abi3-py312",
+         "abi3-py37", "abi3-py38", "abi3-py39", "anyhow", "auto-initialize", "chrono",
+         "chrono-tz", "default", "either", "experimental-async", "experimental-inspect",
+         "extension-module", "eyre", "full", "generate-import-lib", "gil-refs",
+         "hashbrown", "indexmap", "indoc", "inventory", "macros", "multiple-pymethods",
+         "nightly", "num-bigint", "num-complex", "num-rational", "py-clone",
+         "pyo3-macros", "rust_decimal", "serde", "smallvec", "unindent"))' -C
+         metadata=2015497e2fdfedc9 -C extra-filename=-9131c9a759dcc4c4 --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         cfg_if=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libcfg_if-6ff1b07f6ff2fa00.rmeta
+         --extern
+         indoc=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libindoc-27ed6606f006b312.so
+         --extern
+         libc=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/liblibc-95640403b9be6b73.rmeta
+         --extern
+         memoffset=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libmemoffset-ed30ebda2b4f4dcc.rmeta
+         --extern
+         once_cell=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libonce_cell-7674cc8cbff317e6.rmeta
+         --extern
+         pyo3_ffi=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_ffi-e99f3c08414a5113.rmeta
+         --extern
+         pyo3_macros=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3_macros-811c7ae8ef38dbe4.so
+         --extern
+         unindent=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libunindent-c4658b24614055c9.rmeta
+         --cap-lints allow -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib'
+         --cfg Py_3_6 --cfg Py_3_7 --cfg Py_3_8 --cfg Py_3_9 --cfg Py_3_10 --cfg
+         Py_3_11 --cfg Py_3_12 --cfg invalid_from_utf8_lint --cfg c_str_lit
+         --cfg diagnostic_namespace --check-cfg 'cfg(Py_LIMITED_API)' --check-cfg
+         'cfg(PyPy)' --check-cfg 'cfg(GraalPy)' --check-cfg 'cfg(py_sys_config,
+         values("Py_DEBUG", "Py_REF_DEBUG", "Py_TRACE_REFS", "COUNT_ALLOCS"))' --check-cfg
+         'cfg(invalid_from_utf8_lint)' --check-cfg 'cfg(pyo3_disable_reference_pool)'
+         --check-cfg 'cfg(pyo3_leak_on_drop_without_reference_pool)' --check-cfg
+         'cfg(diagnostic_namespace)' --check-cfg 'cfg(c_str_lit)' --check-cfg 'cfg(Py_3_7)'
+         --check-cfg 'cfg(Py_3_8)' --check-cfg 'cfg(Py_3_9)' --check-cfg 'cfg(Py_3_10)'
+         --check-cfg 'cfg(Py_3_11)' --check-cfg 'cfg(Py_3_12)' --check-cfg 'cfg(Py_3_13)'`
+                Dirty mem_cache v0.1.0
+         (/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache):
+         info of dependency `pyo3` changed
+            Compiling mem_cache v0.1.0
+         (/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache)
+              Running
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name mem_cache --edition=2024 src/lib.rs --error-format=json
+         --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type
+         cdylib --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --cfg
+         'feature="default"' --cfg 'feature="python-extension"' --check-cfg
+         'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default",
+         "inspection", "python-extension"))' -C metadata=86f70dc0a1e47f4f --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         hashbrown=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libhashbrown-bed75ef4492bb88e.rlib
+         --extern
+         pyo3=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3-9131c9a759dcc4c4.rlib
+         --extern
+         sha2=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsha2-8a27e7ecd62c177d.rlib
+         --extern
+         tch=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libtch-073292ba8ffac9c7.rlib
+         --extern
+         thiserror=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libthiserror-b7473eee7dc45b56.rlib
+         -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib' -L
+         native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out
+         -L
+         native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/zstd-sys-c321ef942c678c6b/out
+         -L
+         native=/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpqYyqf9/lib/python3.12/site-packages/torch/lib
+         -L native=/usr/lib64`
+         error: linking with `cc` failed: exit status: 1
+           |
+           = note:  "cc"
+         "-Wl,--version-script=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/rustcXNU0VB/list"
+         "-Wl,--no-undefined-version" "-m64"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/rustcXNU0VB/symbols.o"
+         "<17 object files omitted>" "-Wl,--as-needed" "-Wl,-Bstatic"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/{libpyo3-9131c9a759dcc4c4,libmemoffset-ed30ebda2b4f4dcc,libonce_cell-7674cc8cbff317e6,libpyo3_ffi-e99f3c08414a5113,libunindent-c4658b24614055c9,libhashbrown-bed75ef4492bb88e,libequivalent-19e527a80a0370cf,liballocator_api2-2910f0d9f0859f47,libfoldhash-ba841ae294dbeaa3,libtch-073292ba8ffac9c7,libndarray-7e47099f45b36f50,libmatrixmultiply-d377d56a4c1edded,libnum_complex-49bd2bfb5b630502,libnum_integer-03fb3fd9aee3cb27,libnum_traits-a8871dbb3e7dd47e,librawpointer-3d3c349882887114,librand-d8c543506fc7802d,librand_chacha-6ab0ffae32ba77fa,libppv_lite86-f522847071702232,libsafetensors-4f1ebf30a8034768,libserde_json-8962690b23a4c90f,libmemchr-8128cd617a036bd6,libitoa-caaa67dc2c02cc81,libzmij-4dc8f5196de866c9,libserde-162ca33ee8fb4211,libserde_core-89b6c656d9bd8fe8,libhalf-e38439e81e41be44,libzerocopy-54ae5bd8f9ca296c,libtorch_sys-b3f503aa4890f978,libzip-24acb37964eecaf9,libpbkdf2-dd549777f0834707,libsha2-8a27e7ecd62c177d,libpassword_hash-cea6b86f576293f1,libbase64ct-4ebb39807836b2bf,librand_core-65a0bc1b6e28db14,libgetrandom-a1bd5acec436b01a,libtime-9fef428ee16b3948,libpowerfmt-949d8282a8229255,libnum_conv-d3ec75731475b816,libderanged-0356dd27f41451e6,libtime_core-205ddc84f8ae9cca,libzstd-b5b1f2bdb4f46494,libzstd_safe-a93d1c12cc9a1b48,libzstd_sys-131b3b7e8e6c3a15,libbzip2-f6fd921e31ce28df,liblibc-95640403b9be6b73,libbzip2_sys-92c513ae8b933664,libflate2-77b48dd0dbe39a55,libminiz_oxide-07e0eb4eaa55530a,libsimd_adler32-0d69806fbe254705,libcrc32fast-73f64a2e1210c6be,libbyteorder-7fa9adf267ebef8d,libaes-f53550de273335bc,libcipher-e9827daa93bd5ce6,libinout-072bdbcb37ed3591,libsha1-909c72b889efe044,libcpufeatures-d0beb8bbcc0483ec,libcfg_if-6ff1b07f6ff2fa00,libhmac-d9066869690bf32a,libdigest-261824eba1f576f9,libsubtle-a4c57918890a4679,libblock_buffer-a1bc762dc0c97e7c,libcrypto_common-b3e551d54b360c29,libgeneric_array-ec2dc5e90cf7e5ad,libtypenum-e4283ca9f0a125c7,libconstant_time_eq-399eabc73f8bd6ed,libthiserror-b7473eee7dc45b56,liblazy_static-e65b7af75ee6fab6}.rlib"
+         "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib/{libstd-*,libpanic_unwind-*,libobject-*,libmemchr-*,libaddr2line-*,libgimli-*,libcfg_if-*,librustc_demangle-*,libstd_detect-*,libhashbrown-*,librustc_std_workspace_alloc-*,libminiz_oxide-*,libadler2-*,libunwind-*,liblibc-*,librustc_std_workspace_core-*,liballoc-*,libcore-*,libcompiler_builtins-*}.rlib"
+         "-Wl,-Bdynamic" "-lstdc++" "-ltorch_cuda" "-ltorch_python"
+         "-ltorch_cpu" "-ltorch" "-lc10" "-lgomp" "-lbz2" "-lgcc_s"
+         "-lutil" "-lrt" "-lpthread" "-lm" "-ldl" "-lc" "-L"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/rustcXNU0VB/raw-dylibs"
+         "-B<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/bin/gcc-ld"
+         "-fuse-ld=lld" "-Wl,--eh-frame-hdr" "-Wl,-z,noexecstack" "-L"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out"
+         "-L"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/zstd-sys-c321ef942c678c6b/out"
+         "-L"
+         "/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpqYyqf9/lib/python3.12/site-packages/torch/lib"
+         "-L" "/usr/lib64" "-L" "<sysroot>/lib/rustlib/x86_64-unknown-linux-gnu/lib" "-o"
+         "/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libmem_cache.so"
+         "-Wl,--gc-sections" "-shared" "-Wl,-z,relro,-z,now" "-Wl,-O1" "-Wl,--strip-debug"
+         "-nodefaultlibs" "-Wl,-rpath,$ORIGIN/../../../../torch/lib"
+           = note: some arguments are omitted. use `--verbose` to show all linker arguments
+           = note: rust-lld: error: unable to find library -ltorch_cuda
+                   rust-lld: error: unable to find library -ltorch_python
+                   rust-lld: error: unable to find library -ltorch_cpu
+                   rust-lld: error: unable to find library -ltorch
+                   rust-lld: error: unable to find library -lc10
+                   collect2: error: ld returned 1 exit status
+
+
+         error: could not compile `mem_cache` (lib) due to 1 previous error
+
+         Caused by:
+           process didn't exit successfully:
+         `/home/hadoop-friday-llm/.rustup/toolchains/stable-x86_64-unknown-linux-gnu/bin/rustc
+         --crate-name mem_cache --edition=2024 src/lib.rs --error-format=json
+         --json=diagnostic-rendered-ansi,artifacts,future-incompat --crate-type
+         cdylib --emit=dep-info,link -C opt-level=3 -C embed-bitcode=no --cfg
+         'feature="default"' --cfg 'feature="python-extension"' --check-cfg
+         'cfg(docsrs,test)' --check-cfg 'cfg(feature, values("default",
+         "inspection", "python-extension"))' -C metadata=86f70dc0a1e47f4f --out-dir
+         /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         -C strip=debuginfo -L
+         dependency=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps
+         --extern
+         hashbrown=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libhashbrown-bed75ef4492bb88e.rlib
+         --extern
+         pyo3=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libpyo3-9131c9a759dcc4c4.rlib
+         --extern
+         sha2=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libsha2-8a27e7ecd62c177d.rlib
+         --extern
+         tch=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libtch-073292ba8ffac9c7.rlib
+         --extern
+         thiserror=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/deps/libthiserror-b7473eee7dc45b56.rlib
+         -C 'link-arg=-Wl,-rpath,$ORIGIN/../../../../torch/lib' -L
+         native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/torch-sys-4a85c46534291d87/out
+         -L
+         native=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/sglang/rust/mem-cache/target/release/build/zstd-sys-c321ef942c678c6b/out
+         -L
+         native=/home/hadoop-friday-llm/.cache/uv/builds-v0/.tmpqYyqf9/lib/python3.12/site-packages/torch/lib
+         -L native=/usr/lib64` (exit status: 1)
+         error: `cargo rustc --lib --message-format=json-render-diagnostics --manifest-path
+         ../rust/mem-cache/Cargo.toml --release -v --features 'pyo3/extension-module
+         python-extension' --locked --crate-type cdylib` failed with code 101
+
+hint: Build failures usually indicate a problem with the package or the build environment

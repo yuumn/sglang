@@ -738,41 +738,21 @@ class DSparkDraftMixin:
         cache_loc_2d: Optional[torch.Tensor] = None,
         commit_lens: Optional[torch.Tensor] = None,
     ) -> None:
-        ctx_hidden = self.project_target_hidden(target_hidden)
-
-        bundle = self._fused_kv_write_bundle(pool)
-        if bundle is not None:
-            from sglang.kernels.ops.speculative.dspark.fused_kv_write import (
-                fused_kv_norm_rope_write,
-            )
-
-            w_all, meta, knw, cos_sin, eps, num_layers, kv_size, head_dim = bundle
-            kv_all = F.linear(ctx_hidden, w_all)
-            if cache_loc_2d is not None and commit_lens is not None:
-                locs = cache_loc_2d.reshape(-1)
-                write_commit_lens = commit_lens
-                locs_row_width = cache_loc_2d.shape[1]
-            else:
-                locs = cache_loc
-                write_commit_lens = None
-                locs_row_width = None
-            fused_kv_norm_rope_write(
-                kv_all,
-                meta,
-                knw,
-                cos_sin,
-                positions,
-                locs,
-                num_layers,
-                kv_size,
-                head_dim,
-                eps,
-                commit_lens=write_commit_lens,
-                locs_row_width=locs_row_width,
-                is_neox_style=self.layers[0].self_attn.rotary_emb.is_neox_style,
+        prepared = self.prepare_target_hidden_kv(
+            target_hidden=target_hidden,
+            pool=pool,
+        )
+        if prepared is not None:
+            self.write_prepared_target_hidden_kv(
+                prepared=prepared,
+                positions=positions,
+                cache_loc=cache_loc,
+                cache_loc_2d=cache_loc_2d,
+                commit_lens=commit_lens,
             )
             return
 
+        ctx_hidden = self.project_target_hidden(target_hidden)
         stacked = self._stacked_ctx_kv_params()
         if stacked is not None:
             k_all, v_all = self._project_ctx_kv_stacked(
@@ -808,6 +788,59 @@ class DSparkDraftMixin:
                     attn.attn.k_scale,
                     attn.attn.v_scale,
                 )
+
+    def prepare_target_hidden_kv(self, *, target_hidden: torch.Tensor, pool):
+        """Project target features before the accepted-prefix length is known.
+
+        The projection is independent of acceptance.  Keeping the cache write
+        separate lets the serving worker overlap both dense GEMMs with the
+        sampling accept path, then apply the exact commit mask afterward.
+        """
+        bundle = self._fused_kv_write_bundle(pool)
+        if bundle is None:
+            return None
+        ctx_hidden = self.project_target_hidden(target_hidden)
+        w_all = bundle[0]
+        return F.linear(ctx_hidden, w_all), bundle
+
+    def write_prepared_target_hidden_kv(
+        self,
+        *,
+        prepared,
+        positions: torch.Tensor,
+        cache_loc: torch.Tensor,
+        cache_loc_2d: Optional[torch.Tensor] = None,
+        commit_lens: Optional[torch.Tensor] = None,
+    ) -> None:
+        from sglang.kernels.ops.speculative.dspark.fused_kv_write import (
+            fused_kv_norm_rope_write,
+        )
+
+        kv_all, bundle = prepared
+        _, meta, knw, cos_sin, eps, num_layers, kv_size, head_dim = bundle
+        if cache_loc_2d is not None and commit_lens is not None:
+            locs = cache_loc_2d.reshape(-1)
+            write_commit_lens = commit_lens
+            locs_row_width = cache_loc_2d.shape[1]
+        else:
+            locs = cache_loc
+            write_commit_lens = None
+            locs_row_width = None
+        fused_kv_norm_rope_write(
+            kv_all,
+            meta,
+            knw,
+            cos_sin,
+            positions,
+            locs,
+            num_layers,
+            kv_size,
+            head_dim,
+            eps,
+            commit_lens=write_commit_lens,
+            locs_row_width=locs_row_width,
+            is_neox_style=self.layers[0].self_attn.rotary_emb.is_neox_style,
+        )
 
     def _project_ctx_kv_stacked(
         self,

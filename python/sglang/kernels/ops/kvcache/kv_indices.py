@@ -69,6 +69,101 @@ def create_flashinfer_kv_indices_triton(
 
 
 @triton.jit
+def create_latentspec_stage_kv_indices_triton(
+    req_to_token_ptr,
+    req_pool_indices_ptr,
+    seq_lens_ptr,
+    latent_kv_indptr_ptr,
+    latent_kv_indices_ptr,
+    latent_qo_indptr_ptr,
+    proposal_kv_indptr_ptr,
+    proposal_kv_indices_ptr,
+    proposal_qo_indptr_ptr,
+    req_to_token_ptr_stride,
+    batch_size,
+    LATENT_WIDTH: tl.constexpr,
+    PROPOSAL_WIDTH: tl.constexpr,
+    BLOCK_BS: tl.constexpr,
+    ENTRY_PAGE_SIZE: tl.constexpr = 1,
+):
+    """Build both LatentSpec attention-stage CSR layouts in one launch.
+
+    The two stages share the same request rows.  The proposal stage only adds
+    the fixed latent prefix, so independently running cumsum, arange and KV
+    gather kernels for both stages is redundant and especially costly for the
+    small speculative batches.
+    """
+    BLOCK_TOKENS: tl.constexpr = 512
+    pid = tl.program_id(0)
+    pid64 = pid.to(tl.int64)
+
+    batch_ar = tl.arange(0, BLOCK_BS)
+    preceding_lens = tl.load(
+        seq_lens_ptr + batch_ar,
+        mask=batch_ar < pid,
+        other=0,
+    ).to(tl.int64)
+    latent_offset = tl.sum(preceding_lens, axis=0)
+    seq_len = tl.load(seq_lens_ptr + pid).to(tl.int64)
+    proposal_offset = latent_offset + pid64 * LATENT_WIDTH
+
+    tl.store(latent_kv_indptr_ptr + pid, latent_offset)
+    tl.store(proposal_kv_indptr_ptr + pid, proposal_offset)
+    tl.store(latent_qo_indptr_ptr + pid, pid64 * LATENT_WIDTH)
+    tl.store(proposal_qo_indptr_ptr + pid, pid64 * PROPOSAL_WIDTH)
+    if pid == batch_size - 1:
+        tl.store(latent_kv_indptr_ptr + batch_size, latent_offset + seq_len)
+        tl.store(
+            proposal_kv_indptr_ptr + batch_size,
+            proposal_offset + seq_len + LATENT_WIDTH,
+        )
+        tl.store(
+            latent_qo_indptr_ptr + batch_size, batch_size * LATENT_WIDTH
+        )
+        tl.store(
+            proposal_qo_indptr_ptr + batch_size,
+            batch_size * PROPOSAL_WIDTH,
+        )
+
+    req_pool_index = tl.load(req_pool_indices_ptr + pid).to(tl.int64)
+    proposal_len = seq_len + LATENT_WIDTH
+    num_loop = tl.cdiv(proposal_len, BLOCK_TOKENS)
+    for i in range(num_loop):
+        offset = (
+            tl.arange(0, BLOCK_TOKENS).to(tl.int64) + i * BLOCK_TOKENS
+        )
+        proposal_mask = offset < proposal_len
+        if ENTRY_PAGE_SIZE == 1:
+            data = tl.load(
+                req_to_token_ptr
+                + req_pool_index * req_to_token_ptr_stride
+                + offset,
+                mask=proposal_mask,
+            )
+        else:
+            entry = tl.load(
+                req_to_token_ptr
+                + req_pool_index * req_to_token_ptr_stride
+                + offset // ENTRY_PAGE_SIZE,
+                mask=proposal_mask,
+            )
+            data = (
+                entry.to(tl.int64) * ENTRY_PAGE_SIZE
+                + offset % ENTRY_PAGE_SIZE
+            )
+        tl.store(
+            proposal_kv_indices_ptr + proposal_offset + offset,
+            data,
+            mask=proposal_mask,
+        )
+        tl.store(
+            latent_kv_indices_ptr + latent_offset + offset,
+            data,
+            mask=offset < seq_len,
+        )
+
+
+@triton.jit
 def create_chunked_prefix_cache_kv_indices(
     req_to_token_ptr,  # (max_batch, max_context_len,)
     req_pool_indices_ptr,  # (batch_size,)

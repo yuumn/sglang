@@ -9,6 +9,7 @@ import triton
 from sglang.kernels.ops.attention.metadata import get_num_kv_splits_triton
 from sglang.kernels.ops.kvcache.kv_indices import (
     create_flashinfer_kv_indices_triton,
+    create_latentspec_stage_kv_indices_triton,
 )
 from sglang.srt.configs.hybrid_arch import mambaish_config
 from sglang.srt.configs.model_config import (
@@ -536,36 +537,24 @@ class TritonAttnBackend(AttentionBackend):
         latent_width, proposal_width = self.latentspec_stage_widths
         bs = int(forward_batch.batch_size)
         prefix_lens = forward_batch.seq_lens[:bs]
-        proposal_prefix_lens = prefix_lens + latent_width
-
-        latent_qo_indptr[: bs + 1] = torch.arange(
-            0,
-            (bs + 1) * latent_width,
-            step=latent_width,
-            dtype=latent_qo_indptr.dtype,
-            device=self.device,
-        )
-        proposal_qo_indptr[: bs + 1] = torch.arange(
-            0,
-            (bs + 1) * proposal_width,
-            step=proposal_width,
-            dtype=proposal_qo_indptr.dtype,
-            device=self.device,
-        )
-        latent_kv_indptr = self._fill_kv_indptr_and_indices(
-            bs,
-            prefix_lens,
-            index_table,
-            latent_kv_indices,
-            kv_indptr=latent_kv_indptr,
-        )
-        proposal_kv_indptr = self._fill_kv_indptr_and_indices(
-            bs,
-            proposal_prefix_lens,
-            index_table,
-            proposal_kv_indices,
-            kv_indptr=proposal_kv_indptr,
-        )
+        if bs:
+            create_latentspec_stage_kv_indices_triton[(bs,)](
+                index_table.ids,
+                index_table.row_ids,
+                prefix_lens,
+                latent_kv_indptr,
+                latent_kv_indices,
+                latent_qo_indptr,
+                proposal_kv_indptr,
+                proposal_kv_indices,
+                proposal_qo_indptr,
+                index_table.row_stride,
+                bs,
+                LATENT_WIDTH=latent_width,
+                PROPOSAL_WIDTH=proposal_width,
+                BLOCK_BS=triton.next_power_of_2(bs),
+                ENTRY_PAGE_SIZE=index_table.entry_page_size,
+            )
 
         def metadata(width, kv_indptr, kv_indices, qo_indptr):
             return ForwardMetadata(
@@ -1755,10 +1744,22 @@ class TritonAttnBackend(AttentionBackend):
             self.latentspec_stage_widths is not None
             and self.forward_metadata.max_extend_len <= 8
         )
+        # Q/K/V projection shards are views into one packed output. The
+        # generic path materializes K and V because some attention backends
+        # require dense rows, but this Triton kernel consumes their explicit
+        # token/head strides. Avoid five tiny D2D copy launches per LatentSpec
+        # replay while retaining the fallback for unusual last-dim layouts.
+        strided_latentspec_kv = (
+            latentspec_short_extend
+            and k.stride(-1) == 1
+            and v.stride(-1) == 1
+        )
+        k_extend = k if strided_latentspec_kv else k.contiguous()
+        v_extend = v if strided_latentspec_kv else v.contiguous()
         self.extend_attention_fwd(
             q.view(-1, layer.tp_q_head_num, layer.qk_head_dim),
-            k.contiguous(),
-            v.contiguous(),
+            k_extend,
+            v_extend,
             o.view(-1, layer.tp_q_head_num, layer.v_head_dim),
             self.token_to_kv_pool.get_key_buffer(layer.layer_id),
             self.token_to_kv_pool.get_value_buffer(layer.layer_id),
@@ -1782,7 +1783,11 @@ class TritonAttnBackend(AttentionBackend):
             aux_tensors=aux_tensors,
             extend_seq_lens_cpu=forward_batch.extend_seq_lens_cpu,
             block_m_override=8 if latentspec_short_extend else None,
-            num_warps_override=2 if latentspec_short_extend else None,
+            num_warps_override=(
+                envs.SGLANG_LATENTSPEC_ATTN_NUM_WARPS.get()
+                if latentspec_short_extend
+                else None
+            ),
         )
         return o
 
