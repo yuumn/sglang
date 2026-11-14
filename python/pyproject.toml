@@ -111,11 +111,19 @@ url = "https://download.pytorch.org/whl/cu129"
 explicit = true
 
 [[tool.uv.index]]
+name = "sglang-cu129"
+url = "https://sgl-project.github.io/whl/cu129/"
+explicit = true
+
+[[tool.uv.index]]
 name = "nvidia"
 url = "https://pypi.nvidia.com"
 explicit = true
 
 [tool.uv.sources]
+sgl-deep-ep = { index = "sglang-cu129" }
+sgl-deep-gemm = { index = "sglang-cu129" }
+sglang-kernel = { index = "sglang-cu129" }
 cuda-tile = { index = "nvidia" }
 torch = { index = "pytorch-cu129" }
 torchaudio = { index = "pytorch-cu129" }
