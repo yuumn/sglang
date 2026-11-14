@@ -1,0 +1,5 @@
+output/
+.plot-venv/
+__pycache__/
+sync_state.json
+sync_spool.xml

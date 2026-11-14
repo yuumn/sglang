@@ -528,7 +528,47 @@ class _LatentSpecBackbone(nn.Module):
             and self._first_latent_token_qkv_cache is not None
             and self._first_proposal_token_qkv_cache is not None
         )
-        if token_qkv_cached:
+        fused_cached_init = (
+            token_qkv_cached
+            and self.embed_tokens.weight.dtype == torch.bfloat16
+            and 2 * first_latent_layer.self_attn.num_kv_heads
+            <= first_latent_layer.self_attn.num_heads
+            and envs.SGLANG_LATENTSPEC_FUSED_CACHED_INIT.get()
+        )
+        if fused_cached_init:
+            from sglang.kernels.ops.speculative.dspark.latent_cached_init import (
+                cached_latent_proposal_init,
+            )
+
+            latent_attn = first_latent_layer.self_attn
+            proposal_attn = first_proposal_layer.self_attn
+            (
+                latent_residual,
+                proposal_residual,
+                first_latent_qkv_packed,
+                first_proposal_qkv_packed,
+            ) = cached_latent_proposal_init(
+                input_ids,
+                self.embed_tokens.weight,
+                self._first_latent_token_qkv_cache,
+                self._first_proposal_token_qkv_cache,
+                latent_attn.rotary_emb.cos_sin_cache,
+                proposal_attn.rotary_emb.cos_sin_cache,
+                latent_pos_flat,
+                proposal_pos_flat,
+                batch_size=bs,
+                num_q_heads=latent_attn.num_heads,
+                num_k_heads=latent_attn.num_kv_heads,
+                head_dim=latent_attn.head_dim,
+                num_latent_tokens=self.num_latent_tokens,
+                num_proposal_tokens=self.proposal_size,
+                latent_token_id=self.latent_token_id,
+            )
+            # Both residual rails and cached QKV are ready on the current
+            # stream; no proposal projection side stream is needed.
+            latent = latent_residual
+            proposal = proposal_residual
+        elif token_qkv_cached:
             from sglang.kernels.ops.speculative.dspark.latent_init import (
                 latent_proposal_init_residual,
             )
@@ -595,7 +635,13 @@ class _LatentSpecBackbone(nn.Module):
         # first operation that consumes the projected tensors.
         proposal_flat = proposal.reshape(-1, proposal.shape[-1])
         first_latent_qkv = None
-        if token_qkv_cached:
+        if fused_cached_init:
+            latent_attn = first_latent_layer.self_attn
+            first_latent_qkv = first_latent_qkv_packed.split(
+                [latent_attn.q_size, latent_attn.kv_size, latent_attn.kv_size],
+                dim=-1,
+            )
+        elif token_qkv_cached:
             from sglang.kernels.ops.speculative.dspark.latent_init import (
                 cached_qkv_rope,
             )
@@ -619,7 +665,13 @@ class _LatentSpecBackbone(nn.Module):
             )
         first_proposal_qkv = None
         current_stream = None
-        if envs.SGLANG_LATENTSPEC_OVERLAP_PROPOSAL_QKV.get():
+        if fused_cached_init:
+            proposal_attn = first_proposal_layer.self_attn
+            first_proposal_qkv = first_proposal_qkv_packed.split(
+                [proposal_attn.q_size, proposal_attn.kv_size, proposal_attn.kv_size],
+                dim=-1,
+            )
+        elif envs.SGLANG_LATENTSPEC_OVERLAP_PROPOSAL_QKV.get():
             if self._proposal_projection_stream is None:
                 self._proposal_projection_stream = torch.cuda.Stream(
                     device=proposal.device
