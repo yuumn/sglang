@@ -6,7 +6,7 @@ bash /mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspa
 
 for i in $(seq 1 5); do
 echo "qwen3-4b start $i"
-
+DRAFT_MODEL_DIR=/mydata/models/qwen3-4b/
 # qwen3-4b 1-epoch
 EAGLE3_DRAFT_MODEL=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/DeepSpec_latent_reasoning_diff-pos_0908_code/train_log_checkpoints/train_eagle3_qwen3_4b_20260712_005338/checkpoints/eagle3_ttt7_qwen3_4b/step_2616
 DFLASH_DRAFT_MODEL=/mnt/dolphinfs/ssd_pool/docker/user/hadoop-efficient-llm/yuanerhang/workspace/spec/DeepSpec_latent_reasoning_diff-pos_0908_code/train_log_checkpoints/train_dflash_qwen3_4b_ce-0.1_l1-0.9_20260828_182921/checkpoints/dflash_block7_qwen3_4b/step_2616
