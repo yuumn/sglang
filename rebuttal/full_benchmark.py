@@ -19,7 +19,7 @@ import time
 import aiohttp
 from benchmark import ROOT, append, info, reference
 
-from full_common import DATASETS, COUNTS, VARIANTS, CONCURRENCIES, LENGTHS, atomic_json, valid_cell, read_rows
+from full_common import DATASETS, COUNTS, VARIANTS, CONCURRENCIES, LENGTHS, atomic_json, valid_cell, read_rows, inherited_rows
 
 
 async def measured_requests(session, base, headers, model, prompts, concurrency,
@@ -90,6 +90,8 @@ async def main(args):
         "requests": args.requests, "concurrencies": args.concurrencies,
         "lengths": args.lengths, "temperature": 1.0, "sampling_seed": 980406,
         "full_dataset": not args.smoke,
+        "inherited_results_sha256": hashlib.sha256(args.inherited_results.read_bytes()).hexdigest()
+        if getattr(args, "inherited_results", None) else None,
     }
     config_path = args.output / "benchmark-config.json"
     if config_path.exists() and json.loads(config_path.read_text()) != configuration:
@@ -102,6 +104,13 @@ async def main(args):
     completed = {r["case_id"] for r in rows
                  if valid_cell(r, COUNTS[r["dataset"]])
                  and r.get("configuration_sha256") == fingerprint}
+    inherited = []
+    if getattr(args, "inherited_results", None) and not args.smoke:
+        inherited = [r for r in inherited_rows(args.inherited_results.parent)
+                     if r["family"] == args.family and r["variant"] == args.variant]
+        if any(r["dataset_sha256"] != metadata[r["dataset"]]["sha256"] for r in inherited):
+            raise ValueError("Inherited corpus differs from the current frozen corpus")
+    inherited_keys = {(r["dataset"], r["concurrency"], r["output_length"]) for r in inherited}
     base = f"http://127.0.0.1:{args.port}"
     headers = {"Content-Type": "application/json"}
     sampling = argparse.Namespace(
@@ -129,7 +138,7 @@ async def main(args):
             for concurrency in args.concurrencies:
                 for name, selected in prompts.items():
                     case_id = f"{args.suite}/{args.family}/{args.variant}/{name}/c{concurrency}/fixed{length}"
-                    if case_id in completed:
+                    if case_id in completed or (name, concurrency, length) in inherited_keys:
                         continue
                     if len(selected) < concurrency:
                         raise ValueError("Selected prompts cannot reach requested concurrency")
@@ -165,6 +174,7 @@ async def main(args):
                         case_id=case_id, suite=args.suite, family=args.family, variant=args.variant,
                         created_at=datetime.now(timezone.utc).isoformat(), output_length=length,
                         full_dataset=not args.smoke, configuration_sha256=fingerprint, **summary,
+                        decode_cuda_graph_max_bs=before.get("server_args", before).get("cuda_graph_config", {}).get("decode", {}).get("max_bs"),
                         dataset_sha256=metadata[name]["sha256"], case_warmup_requests=concurrency,
                         case_warmup_max_tokens=128, output_tokens_per_second=summary["total_completion_tokens"] / wall,
                         valid=not summary["failed_requests"] and not errors, length_error_indices=errors,
@@ -183,6 +193,7 @@ async def main(args):
         atomic_json(args.output / "complete.json", {
             "configuration_sha256": fingerprint, "full_dataset": not args.smoke,
             "expected_cells": len(DATASETS) * len(args.lengths) * len(args.concurrencies),
+            "inherited_cells": len(inherited),
             "finished_at": datetime.now(timezone.utc).isoformat()})
 
 
@@ -198,6 +209,7 @@ if __name__ == "__main__":
     p.add_argument("--concurrencies", nargs="+", type=int, default=CONCURRENCIES)
     p.add_argument("--lengths", nargs="+", type=int, default=LENGTHS)
     p.add_argument("--smoke", action="store_true", help="Separate preflight only; never published as full data")
+    p.add_argument("--inherited-results", type=Path, help="Verified prior measurements, retaining their original configuration")
     args = p.parse_args()
     if args.requests != 0 and not args.smoke:
         p.error("Final benchmark requires --requests 0 (every row)")

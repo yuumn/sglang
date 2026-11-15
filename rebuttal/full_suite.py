@@ -22,7 +22,7 @@ import sys
 import time
 import urllib.request
 
-from full_common import ROOT, DATASETS, COUNTS, VARIANTS, atomic_json, read_rows, valid_cell
+from full_common import ROOT, DATASETS, COUNTS, VARIANTS, atomic_json, read_rows, valid_cell, inherited_rows
 
 TARGETS = {"qwen3-4b": "/mydata/Qwen/Qwen3-4B", "qwen3-8b": "/root/workspace/Qwen/Qwen3-8B"}
 STEPS = {"qwen3-4b": "step_2616", "qwen3-8b": "step_2618"}
@@ -101,7 +101,7 @@ def framework_patch():
     return patch
 
 
-def freeze_inputs(output):
+def freeze_inputs(output, preflight_source=None):
     corpus = output / "datasets"
     corpus.mkdir(exist_ok=True)
     dataset_manifest = {}
@@ -126,6 +126,10 @@ def freeze_inputs(output):
         "targets": TARGETS, "variants": VARIANTS,
         "sampling": {"temperature": 1.0, "seed": 980406, "enable_thinking": False, "ignore_eos": True},
         "protocol": "FULL_DATASETS; total completion tokens / whole measured group wall; one attempt per cell",
+        "decode_cuda_graph_max_bs": 256,
+        "max_running_requests": 256,
+        "preflight_reference": str(preflight_source) if preflight_source else None,
+        "inherited_results_sha256": sha(output / "inherited-results.json") if (output / "inherited-results.json").exists() else None,
         "environment": {k: v for k, v in os.environ.items() if k.startswith("SGLANG_")},
     }
     path = output / "suite-manifest.json"
@@ -137,7 +141,7 @@ def freeze_inputs(output):
 
 
 def fully_complete(run_dir, family, variant):
-    rows = read_rows(run_dir / "results.jsonl")
+    rows = read_rows(run_dir / "results.jsonl") + inherited_rows(run_dir.parents[2])
     expected = {(d, c, n) for d in DATASETS for c in [1, 2, 4, 8, 16] for n in [512, 1024, 2048, 4096]}
     actual = {(r["dataset"], r["concurrency"], r["output_length"]) for r in rows
               if r.get("family") == family and r.get("variant") == variant
@@ -228,6 +232,8 @@ def run_configuration(args, family, variant, corpus):
                    "--dataset-dir", str(corpus), "--output", str(run_dir), "--port", str(args.port)]
             if args.preflight:
                 cmd += ["--smoke", "--requests", "16", "--lengths", "512", "--concurrencies", "1", "16"]
+            elif (args.output / "inherited-results.json").exists():
+                cmd += ["--inherited-results", str(args.output / "inherited-results.json")]
             client = subprocess.Popen(cmd, start_new_session=True)
             try:
                 while True:
@@ -258,12 +264,13 @@ def main(args):
     lock = (args.output / "runner.lock").open("w")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     (args.output / "runner.pid").write_text(str(os.getpid()))
-    corpus = freeze_inputs(args.output)
+    corpus = freeze_inputs(args.output, args.preflight_source)
+    inherited_rows(args.output)
     failures = []
     for family in args.families:
         for variant in args.variants:
             if not args.preflight:
-                preflight = args.output / "preflight" / family / variant / "complete.json"
+                preflight = (args.preflight_source or args.output) / "preflight" / family / variant / "complete.json"
                 if not preflight.exists():
                     raise RuntimeError(f"Run --preflight first: missing {preflight}")
             for attempt in range(1, args.attempts + 1):
@@ -306,6 +313,7 @@ if __name__ == "__main__":
     p.add_argument("--cache", type=Path, default=Path("/dev/shm/rebuttal-full-models"))
     p.add_argument("--port", type=int, default=30000)
     p.add_argument("--preflight", action="store_true")
+    p.add_argument("--preflight-source", type=Path, help="Reuse recorded model compatibility checks; new servers still capture graphs and warm up")
     p.add_argument("--families", nargs="+", choices=list(TARGETS), default=list(TARGETS))
     p.add_argument("--variants", nargs="+", choices=VARIANTS, default=VARIANTS)
     p.add_argument("--attempts", type=int, default=2)

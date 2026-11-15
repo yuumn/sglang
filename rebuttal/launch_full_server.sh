@@ -17,6 +17,7 @@ export VIRTUAL_ENV="$ROOT/.venv"
 export PATH="$VIRTUAL_ENV/bin:$PATH"
 export NO_PROXY="localhost,127.0.0.1${NO_PROXY:+,$NO_PROXY}"
 export SGLANG_RAGGED_VERIFY_MODE=${SGLANG_RAGGED_VERIFY_MODE:-static}
+export SGLANG_FLASHINFER_WORKSPACE_SIZE=${SGLANG_FLASHINFER_WORKSPACE_SIZE:-1073741824}
 exec "$VIRTUAL_ENV/bin/python" -m sglang.launch_server \
   --model-path "${TARGET_MODEL:?Verified target model cache is required}" \
   --speculative-draft-model-path "${DRAFT_MODEL:?Verified draft model cache is required}" \
@@ -27,5 +28,5 @@ exec "$VIRTUAL_ENV/bin/python" -m sglang.launch_server \
   --trust-remote-code --dtype bfloat16 --weight-loader-disable-mmap \
   --random-seed 980406 --attention-backend flashinfer \
   --speculative-draft-attention-backend triton \
-  --mem-fraction-static 0.50 --max-running-requests 32 \
-  --cuda-graph-max-bs-decode 32 --context-length 16384 "$@"
+  --mem-fraction-static 0.50 --max-running-requests 256 \
+  --cuda-graph-max-bs-decode 256 --context-length 16384 "$@"

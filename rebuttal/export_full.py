@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 from pathlib import Path
-from full_common import ROOT, DATASETS, COUNTS, VARIANTS, valid_cell
+from full_common import ROOT, DATASETS, COUNTS, VARIANTS, valid_cell, inherited_rows
 
 
 def export(output):
@@ -13,6 +13,9 @@ def export(output):
         return {"rows": [], "total_cells": 1440, "state": "not_started"}
     manifest = json.loads(manifest_path.read_text())
     rows = {}
+    for row in inherited_rows(output):
+        key = (row["family"], row["variant"], row["dataset"], row["concurrency"], row["output_length"])
+        rows[key] = dict(row, decode_cuda_graph_max_bs=32, measurement_source="full_v1")
     progress = []
     for path in sorted((output / "measurements").glob("*/*/results.jsonl")):
         for line in path.read_text().splitlines():
@@ -29,6 +32,7 @@ def export(output):
                 continue
             key = (row["family"], row["variant"], name, row["concurrency"], row["output_length"])
             rows[key] = {k: v for k, v in row.items() if not k.startswith("server_info")}
+            rows[key]["measurement_source"] = output.name
     for path in sorted((output / "measurements").glob("*/*/request-progress.json")):
         progress.append(json.loads(path.read_text()))
     status = json.loads((output / "status.json").read_text()) if (output / "status.json").exists() else {}
@@ -43,7 +47,8 @@ def export(output):
     outcome_path = output / "measurements-outcome.json"
     outcome = json.loads(outcome_path.read_text()) if outcome_path.exists() else None
     preflight_cells = set()
-    for path in sorted((output / "preflight").glob("*/*/results.jsonl")):
+    preflight_root = Path(manifest.get("preflight_reference") or output) / "preflight"
+    for path in sorted(preflight_root.glob("*/*/results.jsonl")):
         for line in path.read_text().splitlines():
             try:
                 row = json.loads(line)
@@ -51,7 +56,7 @@ def export(output):
                 continue
             if row.get("valid") is True and row.get("full_dataset") is False:
                 preflight_cells.add(row["case_id"])
-    preflight_configs = len(list((output / "preflight").glob("*/*/complete.json")))
+    preflight_configs = len(list(preflight_root.glob("*/*/complete.json")))
     if alive and (not status or status.get("runner_pid") != int(pid_file.read_text())):
         command = Path(f"/proc/{int(pid_file.read_text())}/cmdline").read_bytes()
         status = {"state": "staging_models", "mode": "preflight" if b"--preflight" in command else "measurements"}
