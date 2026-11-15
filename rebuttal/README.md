@@ -1,29 +1,52 @@
 # H20 Qwen3-4B throughput comparison
 
+The completed `formal_flashinfer` tuning validation measured 150 matched pairs
+with the same first 32 prompts per dataset (AIME25: all 30 prompts). For the
+120 requested fixed-length scenarios, DSparkLatentSpec was faster in 99/120,
+with a geometric mean throughput ratio of 1.0616. It was faster in a majority
+of the scenarios at every concurrency. Including the natural-EOS supplement,
+it was faster in 124/150, with geometric mean ratio 1.0562. Each cell is one
+measurement; these are sampled tuning results, not full-dataset measurements.
+The comparison CSV/JSON, summary, plots, source snapshot and verified document
+readbacks are in `output/formal_flashinfer/`. All 494 historical/tuning case
+records and the final comparison tables and figure were published and fetched
+back from the first requested Feishu document.
+
+The subsequent two-target/six-draft full-dataset task has a separate launcher,
+output tree and publisher; see [FULL_SUITE.md](FULL_SUITE.md). Its final scope
+is 1440 all-row measurements and 48 tables. Sampled tuning configurations are
+not skipped as fully completed configurations.
+
 Run on `h20` from `/root/workspace/sglang`, using `.venv`.
 
 ```bash
+# Optional first-run cache for the S3-mounted model files; verifies SHA256.
+.venv/bin/python rebuttal/stage_models.py
 rebuttal/launch_server.sh dspark
 rebuttal/launch_server.sh dspark_latentspec
 
 # Owns and stops each server process group; do not run another GPU workload.
-.venv/bin/python -u rebuttal/run_matrix.py --phase baseline --requests 32
+.venv/bin/python -u rebuttal/run_matrix.py --phase formal_flashinfer --requests 32
 
 # Resume: repeat the same command. Valid completed cells are skipped.
 # --requests 0 uses all dataset prompts; --lengths 0 means natural EOS, cap 512.
-.venv/bin/python rebuttal/status.py --phase formal
+.venv/bin/python rebuttal/status.py --phase formal_flashinfer
 .venv/bin/python rebuttal/compare.py \
-  --baseline rebuttal/output/baseline/dspark \
-  --candidate rebuttal/output/baseline/dspark_latentspec \
-  --output rebuttal/output/baseline/comparison
+  --baseline rebuttal/output/formal_flashinfer/dspark \
+  --candidate rebuttal/output/formal_flashinfer/dspark_latentspec \
+  --output rebuttal/output/formal_flashinfer/comparison
 ```
 
 The default matrix is six datasets × five concurrencies × five output policies
 (natural EOS with cap 512, fixed 512/1024/2048/4096) × two variants = 300 cells.
 Prompts are the same first 32 entries (AIME25 has 30). Sampling follows the
 reference script: temperature 1, top_p 1, seed 980406, thinking disabled.
-Both models use gamma 7 and static full verification. Target and draft attention
-use Triton, BF16 weights/KV, TP=1 and the same CUDA graph configuration.
+Both models use gamma 7 and static full verification. Target attention uses
+FlashInfer and draft attention uses Triton, with BF16 weights/KV, TP=1 and the
+same CUDA graph configuration. `TARGET_ATTENTION_BACKEND=triton` reproduces the
+earlier target-backend setting in a fresh phase. Matched long-output probes
+found FlashInfer faster for both variants, so `formal_flashinfer` is the final
+matrix; the interrupted `formal` phase is retained as diagnostic evidence.
 
 The LatentSpec BF16 token-cache path now fuses both stages' residual embedding
 copies and cached QKV/RoPE into one Triton kernel. Set
@@ -71,15 +94,15 @@ After the formal run finishes, require the complete 150-cell paired comparison:
 
 ```bash
 .venv/bin/python rebuttal/compare.py \
-  --baseline rebuttal/output/formal/dspark \
-  --candidate rebuttal/output/formal/dspark_latentspec \
-  --output rebuttal/output/formal/comparison --require-complete
+  --baseline rebuttal/output/formal_flashinfer/dspark \
+  --candidate rebuttal/output/formal_flashinfer/dspark_latentspec \
+  --output rebuttal/output/formal_flashinfer/comparison --require-complete
 # Plot with a separate environment containing matplotlib, preserving serving dependencies.
 .venv/bin/python -m venv rebuttal/.plot-venv
 rebuttal/.plot-venv/bin/python -m pip install matplotlib
 rebuttal/.plot-venv/bin/python rebuttal/plot_results.py \
-  --comparison rebuttal/output/formal/comparison/comparison.json \
-  --output rebuttal/output/formal/comparison
+  --comparison rebuttal/output/formal_flashinfer/comparison/comparison.json \
+  --output rebuttal/output/formal_flashinfer/comparison
 ```
 
 CSV, JSON and Feishu-ready XML tables are produced by `compare.py`. PNG/PDF/SVG

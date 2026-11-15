@@ -30,7 +30,8 @@ exec "$ROOT/.venv/bin/python" -m sglang.launch_server \
   --host 127.0.0.1 --port "${PORT:-30000}" --tp-size 1 \
   --trust-remote-code --dtype bfloat16 \
   --weight-loader-disable-mmap --random-seed 980406 \
-  --attention-backend triton --speculative-draft-attention-backend triton \
+  --attention-backend "${TARGET_ATTENTION_BACKEND:-flashinfer}" \
+  --speculative-draft-attention-backend triton \
   --mem-fraction-static 0.50 --max-running-requests 32 \
   --cuda-graph-max-bs-decode 32 --context-length 16384 \
   "$@"

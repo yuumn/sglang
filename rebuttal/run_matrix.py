@@ -109,6 +109,9 @@ if __name__ == "__main__":
     if not isinstance(args.server_args_json, list) or not all(isinstance(v, str) for v in args.server_args_json):
         p.error("--server-args-json must be a string array")
     args.output.mkdir(parents=True, exist_ok=True)
+    (args.output / "matrix.pid").write_text(str(os.getpid()))
+    (args.output / args.phase).mkdir(parents=True, exist_ok=True)
+    (args.output / args.phase / "runner.pid").write_text(str(os.getpid()))
     for variant in args.variants:
         serve_and_test(variant, args, extra)
     (args.output / (args.phase + ".complete.json")).write_text(json.dumps({"variants": args.variants, "args": extra}))

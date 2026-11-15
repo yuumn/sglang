@@ -37,7 +37,7 @@ def main(args):
         ax.set_xscale("log", base=2)
         ax.set_xticks([1, 2, 4, 8, 16], ["1", "2", "4", "8", "16"])
         ax.set_xlabel("Concurrency")
-        ax.set_ylabel("LatentSpec / DSpark throughput")
+        ax.set_ylabel("DSparkLatentSpec / DSpark throughput")
         ax.set_title("Natural EOS (cap 512)" if length == 0 else f"Fixed {length} output tokens")
         ax.grid(axis="y", alpha=0.2)
     last = axes.flat[-1]
@@ -47,9 +47,12 @@ def main(args):
     last.legend(handles=handles, loc="upper left", frameon=False, ncol=2)
     ratios = [r["ratio"] for r in rows]
     geo = math.exp(statistics.fmean(map(math.log, ratios)))
-    last.text(0.02, 0.38,
+    counts = sorted({r["requests"] for r in rows})
+    sample_label = " / ".join(map(str, counts))
+    last.text(0.02, 0.57,
               f"Paired cells: {len(rows)}\nGeometric mean ratio: {geo:.4f}\n"
               f"Faster cells: {sum(r > 1 for r in ratios)} / {len(rows)}\n"
+              f"Requests per cell: {sample_label} (matched prefixes)\n"
               "Metric: completion tokens / entire group wall time\n"
               "One measurement per cell; no confidence intervals.",
               transform=last.transAxes, fontsize=9, va="top", linespacing=1.6)

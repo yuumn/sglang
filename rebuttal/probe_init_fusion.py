@@ -76,9 +76,9 @@ def fused(input_ids, embedding, latent_cache, proposal_cache, cos, lp, pp,
     return lr, pr, lq, pq
 
 
-def main(production=False):
+def main(production=False, hidden_size=2560, output=None):
     torch.manual_seed(42)
-    nq, nk, hd, d, nl, np, vocab = 32, 8, 128, 2560, 4, 7, 4096
+    nq, nk, hd, d, nl, np, vocab = 32, 8, 128, hidden_size, 4, 7, 4096
     embedding = torch.randn((vocab, d), device="cuda", dtype=torch.bfloat16)
     lc = torch.randn((vocab, (nq+2*nk)*hd), device="cuda", dtype=torch.bfloat16)
     pc = torch.randn_like(lc)
@@ -123,15 +123,19 @@ def main(production=False):
             torch.testing.assert_close(a, b, rtol=0, atol=0)
         ref_us = triton.testing.do_bench_cudagraph(ref, rep=500) * 1000
         fused_us = triton.testing.do_bench_cudagraph(candidate, rep=500) * 1000
-        row = dict(batch=batch, reference_us=ref_us, candidate_us=fused_us,
+        row = dict(batch=batch, hidden_size=d, reference_us=ref_us, candidate_us=fused_us,
                    speedup=ref_us/fused_us, bitwise_parity=True, replay_parity=True)
         rows.append(row)
         print(json.dumps(row), flush=True)
-    dest = Path(__file__).resolve().parent / ("output/init-fusion-production-probe.json" if production else "output/init-fusion-probe.json")
+    dest = output or Path(__file__).resolve().parent / ("output/init-fusion-production-probe.json" if production else "output/init-fusion-probe.json")
+    dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(json.dumps(rows, indent=2))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--production", action="store_true")
-    main(parser.parse_args().production)
+    parser.add_argument("--hidden-size", type=int, default=2560)
+    parser.add_argument("--output", type=Path)
+    args = parser.parse_args()
+    main(args.production, args.hidden_size, args.output)

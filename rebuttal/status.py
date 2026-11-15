@@ -12,7 +12,9 @@ p.add_argument("--phase", default="formal")
 args = p.parse_args()
 summary = {"phase": args.phase, "checked_at": datetime.now(timezone.utc).isoformat(),
            "complete": (ROOT / (args.phase + ".complete.json")).exists(), "variants": {}}
-pidfile = ROOT / "matrix.pid"
+pidfile = ROOT / args.phase / "runner.pid"
+if not pidfile.exists():
+    pidfile = ROOT / "matrix.pid"
 if pidfile.exists():
     pid = int(pidfile.read_text())
     try:

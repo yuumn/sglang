@@ -8,6 +8,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 DEST = Path("/dev/shm/rebuttal-models")
+OUTPUT = Path(__file__).resolve().parent / "output"
+OUTPUT.mkdir(parents=True, exist_ok=True)
 SOURCES = {
     "target": Path("/mydata/Qwen/Qwen3-4B"),
     "dspark": Path("/mydata/models/qwen3-4b/dspark/step_2616"),
@@ -49,5 +51,5 @@ with ThreadPoolExecutor(max_workers=6) as pool:
         out, result = future.result()
         manifest[out] = result
 (DEST / "manifest.json").write_text(json.dumps(manifest, indent=2))
-(Path(__file__).resolve().parent / "output/model-cache-manifest.json").write_text(json.dumps(manifest, indent=2))
+(OUTPUT / "model-cache-manifest.json").write_text(json.dumps(manifest, indent=2))
 print("STAGING_COMPLETE", flush=True)

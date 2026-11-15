@@ -17,6 +17,8 @@ class BenchmarkContract(unittest.IsolatedAsyncioTestCase):
         self.offset = 0
         self.bodies = []
         async def completion(request):
+            if getattr(self, "http_failure", False):
+                return web.Response(status=503, text="mock service unavailable")
             body = await request.json()
             self.bodies.append(body)
             n = body["max_completion_tokens"] + self.offset
