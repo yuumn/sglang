@@ -7,7 +7,7 @@ OPTIONS=()
 case "$VARIANT" in
   dspark) ALGORITHM=DSPARK ;;
   dspark_latentspec) ALGORITHM=DSPARK_LATENTSPEC ;;
-  dflash|dflash-3L) ALGORITHM=DFLASH; OPTIONS+=(--speculative-dflash-prediction-hidden-start 0) ;;
+  dflash|dflash-3L|dflash-4L) ALGORITHM=DFLASH; OPTIONS+=(--speculative-dflash-prediction-hidden-start 0) ;;
   eagle3) ALGORITHM=EAGLE3; OPTIONS+=(--speculative-num-steps 7 --speculative-eagle-topk 1) ;;
   latentspec) ALGORITHM=LATENTSPEC ;;
   *) echo "Unknown variant: $VARIANT" >&2; exit 2 ;;

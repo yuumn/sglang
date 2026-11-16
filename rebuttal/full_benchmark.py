@@ -209,7 +209,7 @@ if __name__ == "__main__":
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--suite", default="full_v1")
     p.add_argument("--family", required=True, choices=["qwen3-4b", "qwen3-8b"])
-    p.add_argument("--variant", required=True, choices=VARIANTS)
+    p.add_argument("--variant", required=True, choices=VARIANTS + ["dflash-4L"])
     p.add_argument("--port", type=int, default=30000)
     p.add_argument("--dataset-dir", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)

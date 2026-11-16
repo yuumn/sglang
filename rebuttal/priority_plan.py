@@ -51,6 +51,13 @@ def selected_units(plan, control):
     return [u for u in plan["units"] if ceiling is None or u["stage"] <= ceiling]
 
 
+def make_dflash4l_plan():
+    return {"version":4,"decode_cuda_graph_max_bs":256,"concurrencies":CONCURRENCIES,
+            "lengths":[512],"priority_cells":30,"total_cells":30,
+            "units":[dict(unit_id="u01_qwen3-4b_dflash-4L",stage=1,family="qwen3-4b",
+                          variant="dflash-4L",datasets=list(DATASETS),lengths=[512],expected_cells=30)]}
+
+
 def versions(rows):
     return {key(r): hashlib.sha256(json.dumps(r, sort_keys=True).encode()).hexdigest() for r in rows}
 

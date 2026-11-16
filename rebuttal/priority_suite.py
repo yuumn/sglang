@@ -28,9 +28,21 @@ def load_control(out):
     return json.loads(p.read_text()) if p.exists() else {"stop_after_stage": None}
 
 
-def freeze(out):
+def freeze(out, selection_plan=None):
     # The statistics revision explicitly cancels all stages after2.
-    plan = make_plan(max_stage=2)
+    plan = json.loads(selection_plan.read_text()) if selection_plan else make_plan(max_stage=2)
+    seen=set()
+    for unit in plan["units"]:
+        if (unit["family"] not in TARGETS or unit["variant"] not in ["dspark","dspark_latentspec","dflash","dflash-3L","dflash-4L","eagle3","latentspec"]
+                or not unit["datasets"] or not set(unit["datasets"])<=set(DATASETS)
+                or not unit["lengths"] or not set(unit["lengths"])<={512,1024,2048,4096}):
+            raise ValueError("Invalid explicitly selected full-data test unit")
+        points=coordinates(unit)
+        if seen & points or len(points)!=unit["expected_cells"]:
+            raise ValueError("Duplicate or inconsistent selected test cells")
+        seen.update(points)
+    if len(seen)!=plan["total_cells"] or plan["decode_cuda_graph_max_bs"]!=256:
+        raise ValueError("Selected plan size or graph configuration is inconsistent")
     corpus = out / "datasets"
     corpus.mkdir(exist_ok=True)
     for name in DATASETS:
@@ -87,6 +99,8 @@ def measure(out, unit, corpus, port):
     status(out, "staging_models", **unit)
     target = stage(TARGETS[family], cache / family / "target")
     draft = stage(f"/mydata/models/{family}/{variant}/{STEPS[family]}", cache / "current-draft")
+    if variant=="dflash-4L" and json.loads((cache/"current-draft/config.json").read_text()).get("num_hidden_layers")!=4:
+        raise RuntimeError("DFlash-4L checkpoint does not contain four draft layers")
     identity = dict(family=family, variant=variant,
                     target={k:target[k] for k in ["source","files"]},
                     draft={k:draft[k] for k in ["source","files"]})
@@ -158,7 +172,7 @@ def main(args):
     lock = (out/"runner.lock").open("a")
     fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
     (out/"runner.pid").write_text(str(os.getpid()))
-    plan, corpus = freeze(out)
+    plan, corpus = freeze(out,args.plan)
     prefetch = out/"prefetch.json"
     status(out,"waiting_for_model_prefetch")
     prefetch_pid = out/"prefetch.pid"
@@ -210,4 +224,5 @@ if __name__ == "__main__":
     parser=argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output",type=Path,default=ROOT/"rebuttal/output/priority_v2")
     parser.add_argument("--port",type=int,default=30000)
+    parser.add_argument("--plan",type=Path,help="Explicit full-dataset selection plan for a new benchmark phase")
     main(parser.parse_args())

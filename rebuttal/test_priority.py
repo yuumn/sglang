@@ -5,12 +5,18 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from priority_plan import make_plan, coordinates, expected_tokens, ack_digest, selected_units
+from priority_plan import make_plan, make_dflash4l_plan, coordinates, expected_tokens, ack_digest, selected_units
 from full_common import DATASETS, VARIANTS
 from export_priority import export
 
 
 class PriorityContract(unittest.TestCase):
+    def test_dflash4l_task_is_exactly_six_full_datasets_five_concurrencies_fixed512(self):
+        plan=make_dflash4l_plan()
+        self.assertEqual(plan["total_cells"],30)
+        self.assertEqual(expected_tokens(plan["units"]),3_916_800)
+        points=coordinates(plan["units"][0])
+        self.assertEqual(points,{f"qwen3-4b/dflash-4L/{d}/{c}/512" for d in DATASETS for c in [1,2,4,8,16]})
     def test_four_requested_stages_precede_remaining_full_matrix_without_duplicates(self):
         plan=make_plan()
         first=plan["units"][:8]
