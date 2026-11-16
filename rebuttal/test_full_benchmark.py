@@ -36,6 +36,9 @@ class FullBenchmarkContract(basic.BenchmarkContract):
         self.assertTrue(r["valid"])
         self.assertEqual(r["total_completion_tokens"], 1024)
         self.assertEqual(r["output_tokens_per_second"], 1024 / r["wall_time_seconds"])
+        self.assertEqual(r["output_statistics"]["truncation_rate_percent"], 100.0)
+        saved=json.loads((self.args.output/"requests.jsonl").read_text().splitlines()[0])
+        self.assertTrue(all(x["finish_reason"]=="length" and x["response_id"]=="mock-response" for x in saved["requests"]))
         progress = json.loads((self.args.output / "request-progress.json").read_text())
         self.assertEqual(progress["finished_requests"], 2)
         await self.run_benchmark()
@@ -80,6 +83,30 @@ class FullBenchmarkContract(basic.BenchmarkContract):
         record = json.loads(progress.read_text())
         self.assertGreater(record["failed_requests"], 0)
         self.assertLess(record["finished_requests"], 500)
+
+    async def test_preserved_case_is_skipped_without_relabelling_it(self):
+        await self.run_benchmark()
+        original = self.results()[0]
+        folder = self.args.output / "cg256"
+        folder.mkdir()
+        checkpoint = folder / "inherited-results.json"
+        checkpoint.write_text(json.dumps({"source_manifest": {"datasets": {
+            "math500": {"sha256": original["dataset_sha256"]}}}, "rows": [original]}))
+        self.args.output = folder
+        self.args.inherited_results = checkpoint
+        old_posts = len(self.bodies)
+        with patch("full_common.COUNTS", {"math500": 2}):
+            await self.run_benchmark()
+        self.assertEqual(len(self.bodies) - old_posts, 16)  # Global warmup only.
+        self.assertFalse((folder / "results.jsonl").exists())
+        self.assertEqual(json.loads(checkpoint.read_text())["rows"][0], original)
+        self.assertEqual(json.loads((folder / "complete.json").read_text())["inherited_cells"], 1)
+
+    async def test_missing_finish_reason_rejects_warmup_before_new_measurements(self):
+        self.finish_reason=None
+        with self.assertRaisesRegex(RuntimeError,"finish_reason"):
+            await self.run_benchmark()
+        self.assertFalse((self.args.output/"results.jsonl").exists())
 
 
 if __name__ == "__main__":

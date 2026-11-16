@@ -20,6 +20,7 @@ import aiohttp
 from benchmark import ROOT, append, info, reference
 
 from full_common import DATASETS, COUNTS, VARIANTS, CONCURRENCIES, LENGTHS, atomic_json, valid_cell, read_rows, inherited_rows
+from request_statistics import summarize_requests
 
 
 async def measured_requests(session, base, headers, model, prompts, concurrency,
@@ -78,7 +79,8 @@ async def measured_requests(session, base, headers, model, prompts, concurrency,
 
 async def main(args):
     args.output.mkdir(parents=True, exist_ok=True)
-    prompts, metadata = reference.resolve_datasets(args.dataset_dir, DATASETS, args.requests)
+    selected_datasets = getattr(args, "datasets", DATASETS)
+    prompts, metadata = reference.resolve_datasets(args.dataset_dir, selected_datasets, args.requests)
     for name, details in metadata.items():
         details["sha256"] = hashlib.sha256((args.dataset_dir / (name + ".jsonl")).read_bytes()).hexdigest()
         if details["available_prompts"] != COUNTS[name]:
@@ -90,6 +92,7 @@ async def main(args):
         "requests": args.requests, "concurrencies": args.concurrencies,
         "lengths": args.lengths, "temperature": 1.0, "sampling_seed": 980406,
         "full_dataset": not args.smoke,
+        "request_statistics_schema": 1,
         "inherited_results_sha256": hashlib.sha256(args.inherited_results.read_bytes()).hexdigest()
         if getattr(args, "inherited_results", None) else None,
     }
@@ -107,7 +110,9 @@ async def main(args):
     inherited = []
     if getattr(args, "inherited_results", None) and not args.smoke:
         inherited = [r for r in inherited_rows(args.inherited_results.parent)
-                     if r["family"] == args.family and r["variant"] == args.variant]
+                     if r["family"] == args.family and r["variant"] == args.variant
+                     and r["dataset"] in metadata and r["output_length"] in args.lengths
+                     and r["concurrency"] in args.concurrencies]
         if any(r["dataset_sha256"] != metadata[r["dataset"]]["sha256"] for r in inherited):
             raise ValueError("Inherited corpus differs from the current frozen corpus")
     inherited_keys = {(r["dataset"], r["concurrency"], r["output_length"]) for r in inherited}
@@ -131,8 +136,8 @@ async def main(args):
         warmed, _ = await reference.run_requests(
             session=session, url=base + "/v1/chat/completions", headers=headers,
             model=model, prompts=warmup, concurrency=16, args=sampling)
-        if any(not r.success for r in warmed):
-            raise RuntimeError("Global warmup failed")
+        if any(not r.success or r.finish_reason is None for r in warmed):
+            raise RuntimeError("Global warmup failed or omitted finish_reason")
         for length in args.lengths:
             sampling.max_tokens = length
             for concurrency in args.concurrencies:
@@ -148,8 +153,8 @@ async def main(args):
                     warmed, _ = await reference.run_requests(
                         session=session, url=base + "/v1/chat/completions", headers=headers,
                         model=model, prompts=selected[:concurrency], concurrency=concurrency, args=case_warmup)
-                    if any(not r.success for r in warmed):
-                        raise RuntimeError("Case warmup failed")
+                    if any(not r.success or r.finish_reason is None for r in warmed):
+                        raise RuntimeError("Case warmup failed or omitted finish_reason")
                     await reference.flush_cache(session, base, headers, 60)
                     before = await info(session, base)
                     print("START " + case_id, flush=True)
@@ -170,6 +175,8 @@ async def main(args):
                     summary = reference.summarize_group(
                         dataset_name=name, concurrency=concurrency, results=results, wall_time_seconds=wall)
                     errors = [i for i, r in enumerate(results) if r.success and r.completion_tokens != length]
+                    request_records = [dict(dataclasses.asdict(r), request_index=i) for i,r in enumerate(results)]
+                    statistics = summarize_requests(request_records)
                     record = dict(
                         case_id=case_id, suite=args.suite, family=args.family, variant=args.variant,
                         created_at=datetime.now(timezone.utc).isoformat(), output_length=length,
@@ -177,14 +184,15 @@ async def main(args):
                         decode_cuda_graph_max_bs=before.get("server_args", before).get("cuda_graph_config", {}).get("decode", {}).get("max_bs"),
                         dataset_sha256=metadata[name]["sha256"], case_warmup_requests=concurrency,
                         case_warmup_max_tokens=128, output_tokens_per_second=summary["total_completion_tokens"] / wall,
-                        valid=not summary["failed_requests"] and not errors, length_error_indices=errors,
+                        valid=not summary["failed_requests"] and not errors and not statistics["unknown_finish_reason_requests"],
+                        length_error_indices=errors, output_statistics=statistics,
                         sampling=reference.sampling_config(sampling),
                         completion_tokens_min=min(r.completion_tokens for r in results),
                         completion_tokens_max=max(r.completion_tokens for r in results),
                         server_info_before=before, server_info_after=await info(session, base))
                     append(args.output / "requests.jsonl", {
                         "case_id": case_id, "created_at": record["created_at"],
-                        "requests": [dataclasses.asdict(r) for r in results]})
+                        "statistics": statistics, "requests": request_records})
                     append(results_file, record)
                     print("RESULT " + json.dumps({k: v for k, v in record.items()
                                                    if not k.startswith("server_info")}), flush=True)
@@ -192,7 +200,7 @@ async def main(args):
                         raise RuntimeError("Invalid full-dataset measurement: " + case_id)
         atomic_json(args.output / "complete.json", {
             "configuration_sha256": fingerprint, "full_dataset": not args.smoke,
-            "expected_cells": len(DATASETS) * len(args.lengths) * len(args.concurrencies),
+            "expected_cells": len(metadata) * len(args.lengths) * len(args.concurrencies),
             "inherited_cells": len(inherited),
             "finished_at": datetime.now(timezone.utc).isoformat()})
 
@@ -206,6 +214,7 @@ if __name__ == "__main__":
     p.add_argument("--dataset-dir", type=Path, required=True)
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--requests", type=int, default=0)
+    p.add_argument("--datasets", nargs="+", choices=DATASETS, default=DATASETS)
     p.add_argument("--concurrencies", nargs="+", type=int, default=CONCURRENCIES)
     p.add_argument("--lengths", nargs="+", type=int, default=LENGTHS)
     p.add_argument("--smoke", action="store_true", help="Separate preflight only; never published as full data")
@@ -213,6 +222,10 @@ if __name__ == "__main__":
     args = p.parse_args()
     if args.requests != 0 and not args.smoke:
         p.error("Final benchmark requires --requests 0 (every row)")
-    if not args.smoke and (args.concurrencies != CONCURRENCIES or args.lengths != LENGTHS):
-        p.error("Final benchmark requires all five concurrencies and four fixed lengths")
+    if not args.smoke and args.concurrencies != CONCURRENCIES:
+        p.error("Final benchmark requires all five requested concurrencies")
+    if not args.lengths or len(set(args.lengths)) != len(args.lengths) or not set(args.lengths) <= set(LENGTHS):
+        p.error("Output lengths must be a unique selection from 512/1024/2048/4096")
+    if len(set(args.datasets)) != len(args.datasets):
+        p.error("Dataset selection must be unique; each selected dataset still uses every row")
     asyncio.run(main(args))

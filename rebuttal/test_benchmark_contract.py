@@ -23,6 +23,7 @@ class BenchmarkContract(unittest.IsolatedAsyncioTestCase):
             self.bodies.append(body)
             n = body["max_completion_tokens"] + self.offset
             events = [{"choices": [{"delta": {"content": "hello"}}]},
+                      {"id":"mock-response","choices":[{"delta":{},"finish_reason":getattr(self,"finish_reason","length")}]},
                       {"choices": [{"delta": {"content": " world"}}], "usage": {"completion_tokens": n}}]
             return web.Response(text="".join("data: " + json.dumps(e) + "\n\n" for e in events) + "data: [DONE]\n\n",
                                 content_type="text/event-stream")

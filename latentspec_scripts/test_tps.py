@@ -34,6 +34,8 @@ class RequestResult:
     first_token_time: float | None = None
     last_token_time: float | None = None
     error: str | None = None
+    finish_reason: str | None = None
+    response_id: str | None = None
 
     @property
     def ttft_seconds(self) -> float | None:
@@ -336,6 +338,8 @@ async def send_request(
     first_token_time = None
     last_token_time = None
     completion_tokens = None
+    finish_reason = None
+    response_id = None
     try:
         async with session.post(url, headers=headers, json=body) as response:
             if response.status != 200:
@@ -358,6 +362,8 @@ async def send_request(
                     break
 
                 event = json.loads(event_text)
+                if event.get("id"):
+                    response_id = event["id"]
                 usage = event.get("usage") or {}
                 if usage.get("completion_tokens") is not None:
                     completion_tokens = int(usage["completion_tokens"])
@@ -365,6 +371,8 @@ async def send_request(
                 choices = event.get("choices") or []
                 if not choices:
                     continue
+                if choices[0].get("finish_reason") is not None:
+                    finish_reason = choices[0]["finish_reason"]
                 delta = choices[0].get("delta") or {}
                 if streamed_text(delta):
                     token_time = time.perf_counter()
@@ -380,6 +388,8 @@ async def send_request(
             )
         if completion_tokens > 0 and first_token_time is None:
             raise RuntimeError("completion tokens were reported but no token event was received")
+        if finish_reason in ("abort", "error"):
+            raise RuntimeError("server ended generation with " + finish_reason)
         return RequestResult(
             success=True,
             request_start_time=start_time,
@@ -387,6 +397,8 @@ async def send_request(
             completion_tokens=completion_tokens,
             first_token_time=first_token_time,
             last_token_time=last_token_time,
+            finish_reason=finish_reason,
+            response_id=response_id,
         )
     except Exception as exc:
         return RequestResult(
@@ -394,6 +406,8 @@ async def send_request(
             request_start_time=start_time,
             finish_time=time.perf_counter(),
             error=f"{type(exc).__name__}: {exc}",
+            finish_reason=finish_reason,
+            response_id=response_id,
         )
 
 
