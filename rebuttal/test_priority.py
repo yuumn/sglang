@@ -5,12 +5,18 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from priority_plan import make_plan, make_dflash4l_plan, coordinates, expected_tokens, ack_digest, selected_units
+from priority_plan import make_plan, make_dflash4l_plan, make_dflash3l_plan, coordinates, expected_tokens, ack_digest, selected_units
 from full_common import DATASETS, VARIANTS
 from export_priority import export
 
 
 class PriorityContract(unittest.TestCase):
+    def test_dflash3l_task_does_not_reuse_four_layer_coordinates(self):
+        plan=make_dflash3l_plan();points=coordinates(plan["units"][0])
+        self.assertEqual(plan["total_cells"],30)
+        self.assertEqual(expected_tokens(plan["units"]),3_916_800)
+        self.assertEqual(points,{f"qwen3-4b/dflash-3L/{d}/{c}/512" for d in DATASETS for c in [1,2,4,8,16]})
+        self.assertFalse(points & coordinates(make_dflash4l_plan()["units"][0]))
     def test_dflash4l_task_is_exactly_six_full_datasets_five_concurrencies_fixed512(self):
         plan=make_dflash4l_plan()
         self.assertEqual(plan["total_cells"],30)

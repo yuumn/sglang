@@ -206,6 +206,8 @@ def sync(args):
         marker = "REQUEST_STATISTICS_COMPLETE_v3" if args.request_statistics else "PRIORITY_FULL_COMPLETE_v2" if args.priority else "TEMPLATE_FULL_COMPLETE_v1"
         if args.phase=="dflash4l_v1":
             marker="DFLASH_4L_COMPLETE_v1"
+        elif args.phase=="dflash3l_v1":
+            marker="DFLASH_3L_COMPLETE_v1"
         if marker not in "".join(fetch().itertext()):
             message=f"：本轮全部{total}格全量结果已测完并逐格回读核验。"
             message+=f"全部{total}项均有真实结束原因和实际输出长度，{len(payload.get('units',[]))}种目标/草稿配置的逐请求CSV已上传；Graph256。" if args.request_statistics else "保留的旧结果按原Graph32来源记录，新增测量使用Graph256。"

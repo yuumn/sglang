@@ -58,6 +58,13 @@ def make_dflash4l_plan():
                           variant="dflash-4L",datasets=list(DATASETS),lengths=[512],expected_cells=30)]}
 
 
+def make_dflash3l_plan():
+    plan=make_dflash4l_plan()
+    plan["version"]=5
+    plan["units"][0].update(unit_id="u01_qwen3-4b_dflash-3L",variant="dflash-3L")
+    return plan
+
+
 def versions(rows):
     return {key(r): hashlib.sha256(json.dumps(r, sort_keys=True).encode()).hexdigest() for r in rows}
 

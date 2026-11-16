@@ -50,3 +50,12 @@ Results go into the existing `dflash-4L` row of the three 4B/output512 tables at
 The publisher fetch-verifies every value, adds output-length/truncation
 statistics and uploads the complete7650-request CSV before acknowledging
 completion. GPU unavailability is never recorded as a benchmark result.
+
+## Three-layer continuation
+
+After the four-layer phase is complete and its publication is verified, run
+`bash rebuttal/run_dflash3l.sh` for the same30 full-data cells using
+`/mydata/models/qwen3-4b/dflash-3L/step_2616`. Its independent phase is
+`dflash3l_v1`; no4L results are inherited. Publish with the same local CLI
+arguments, changing the phase/output to `dflash3l_v1`. Values are written into
+the existing `dflash-3L` row, with separate output statistics and request CSV.

@@ -99,8 +99,9 @@ def measure(out, unit, corpus, port):
     status(out, "staging_models", **unit)
     target = stage(TARGETS[family], cache / family / "target")
     draft = stage(f"/mydata/models/{family}/{variant}/{STEPS[family]}", cache / "current-draft")
-    if variant=="dflash-4L" and json.loads((cache/"current-draft/config.json").read_text()).get("num_hidden_layers")!=4:
-        raise RuntimeError("DFlash-4L checkpoint does not contain four draft layers")
+    expected_layers={"dflash-4L":4,"dflash-3L":3}.get(variant)
+    if expected_layers is not None and json.loads((cache/"current-draft/config.json").read_text()).get("num_hidden_layers")!=expected_layers:
+        raise RuntimeError(f"{variant} checkpoint does not contain {expected_layers} draft layers")
     identity = dict(family=family, variant=variant,
                     target={k:target[k] for k in ["source","files"]},
                     draft={k:draft[k] for k in ["source","files"]})

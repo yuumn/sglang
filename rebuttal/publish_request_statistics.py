@@ -88,11 +88,12 @@ def write_csv(args,unit,rows):
 def publish(args,payload,state,fetch,fetch_table,update,doc):
     root=fetch()
     heading_marker="REQUEST_STATISTICS_SCOPE_v3"
-    if args.phase=="dflash4l_v1":
-        heading_marker="DFLASH_4L_REQUEST_STATISTICS_v1"
+    if args.phase in ("dflash4l_v1","dflash3l_v1"):
+        layers=4 if args.phase=="dflash4l_v1" else 3
+        heading_marker=f"DFLASH_{layers}L_REQUEST_STATISTICS_v1"
         if heading_marker not in "".join(root.itertext()):
-            update("append","<h1>DFlash-4L 请求实际输出与截断率</h1><p>DFLASH_4L_REQUEST_STATISTICS_v1："
-                "目标Qwen3-4B，草稿dflash-4L/step_2616，共4层；六个数据集全部行，并发1/2/4/8/16，固定输出512，Graph256，共30项。"
+            update("append",f"<h1>DFlash-{layers}L 请求实际输出与截断率</h1><p>{heading_marker}："
+                f"目标Qwen3-4B，草稿dflash-{layers}L/step_2616，共{layers}层；六个数据集全部行，并发1/2/4/8/16，固定输出512，Graph256，共30项。"
                 "实际长度读取usage.completion_tokens；截断率=成功请求中finish_reason为length的请求数÷全部成功请求数×100%。"
                 "保持ignore_eos=true的固定输出口径，实际结束原因逐请求保存；完整配置结束后附7650条请求CSV。</p>")
         root=fetch()
